@@ -1,7 +1,6 @@
 #!/bin/bash
 
-
-
+# ToDo - bring the Docker build in through the Makefile
 #docker run --rm -v "${PWD}:/local" openapitools/openapi-generator-cli generate \
 #    -i /local/api/northbound/v301/enrichment_information/a1ap_enrichment_information.json \
 #    -g go \
@@ -10,8 +9,8 @@
 
 openapi-generator generate -i api/northbound/v301/policy_management/a1ap_policy_management.yaml \
                                -g go \
-                               -o /local/pkg/northbound/a1ap
+                               -o pkg/northbound/a1ap
 
 #openapi-generator generate -i api/northbound/v301/enrichment_information/a1ap_enrichment_information.yaml \
 #                              -g go \
-#                              -o /local/pkg/northbound/a1ap
+#                              -o pkg/northbound/a1ap
