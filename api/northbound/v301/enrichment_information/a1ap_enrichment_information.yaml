@@ -12,7 +12,7 @@ externalDocs:
 servers:
   - url: //localhost:36353/
 tags:
-  - name: A1-EI (enrichment information)
+- name: A1-EI (enrichment information)
   description: ""
 paths:
   /A1-EI/v1/eijobs/{eiJobId}:
@@ -102,7 +102,7 @@ paths:
               responses:
                 204:
                   description: 'Notification received'
-          jobResult:
+        jobResult:
           '{$request.body.jobResultUri}':
             post:
               description: 'Deliverance of EI'

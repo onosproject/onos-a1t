@@ -1,4 +1,4 @@
-
+OAPI_CODEGEN_VERSION := v1.9.0
 
 .PHONY: build
 
@@ -9,6 +9,9 @@ build: # @HELP build the Go binaries and run all validations (default)
 #ToDo - run it through Docker container in the future
 build_api:
 	build/bin/compile-a1ap.sh
+
+oapi-codegen:
+	oapi-codegen || ( cd .. && go install github.com/deepmap/oapi-codegen/cmd/oapi-codegen@${OAPI_CODEGEN_VERSION})
 
 build-tools: # @HELP install the ONOS build tools if needed
 	@if [ ! -d "../build-tools" ]; then cd .. && git clone https://github.com/onosproject/build-tools.git; fi
