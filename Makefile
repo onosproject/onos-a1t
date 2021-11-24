@@ -1,4 +1,5 @@
 OAPI_CODEGEN_VERSION := v1.9.0
+OAPI_SPEC_VALIDATOR_VERSION := 0.3.1
 
 .PHONY: build
 
@@ -10,8 +11,13 @@ build: # @HELP build the Go binaries and run all validations (default)
 build_api:
 	build/bin/compile-a1ap.sh
 
+# Requires providing a filename
 oapi-codegen:
 	oapi-codegen || ( cd .. && go install github.com/deepmap/oapi-codegen/cmd/oapi-codegen@${OAPI_CODEGEN_VERSION})
+
+# Requires providing a filename
+openapi-spec-validator:
+	openapi-spec-validator || ( cd .. && pip3 install openapi-spec-validator==${OAPI_SPEC_VALIDATOR_VERSION})
 
 build-tools: # @HELP install the ONOS build tools if needed
 	@if [ ! -d "../build-tools" ]; then cd .. && git clone https://github.com/onosproject/build-tools.git; fi
