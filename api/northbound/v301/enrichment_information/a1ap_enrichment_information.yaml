@@ -1,0 +1,348 @@
+openapi: 3.0.1
+info:
+  title: A1-EI Enrichment Information Service
+  description: |
+    API for Enrichment Information Service.
+    © 2021, O-RAN Alliance.
+    All rights reserved.
+  version: 1.0.1
+externalDocs:
+  description: 'O-RAN.WG2.A1AP-v03.01 A1 interface: Application Protocol'
+  url: https://www.o-ran.org/specifications
+servers:
+  - url: //localhost:36353/
+tags:
+- name: A1-EI (enrichment information)
+  description: ""
+paths:
+  /A1-EI/v1/eijobs/{eiJobId}:
+    get:
+      tags:
+        - A1-EI (enrichment information)
+      summary: Individual EI job
+      operationId: getIndividualEiJobUsingGET
+      parameters:
+        - name: eiJobId
+          in: path
+          description: eiJobId
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: EI job
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EiJobObject'
+        401:
+          description: Unauthorized
+          content: { }
+        403:
+          description: Forbidden
+          content: { }
+        404:
+          description: Enrichment Information job is not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+      deprecated: false
+    put:
+      tags:
+      - A1-EI (enrichment information)
+      summary: Individual EI job
+      operationId: putIndividualEiJobUsingPUT
+      parameters:
+      - name: eiJobId
+        in: path
+        description: eiJobId
+        required: true
+        schema:
+          type: string
+      requestBody:
+        description: eiJobObject
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EiJobObject'
+        required: true
+      responses:
+        200:
+          description: Job updated
+          content: { }
+        201:
+          description: Job created
+          content: { }
+        401:
+          description: Unauthorized
+          content: { }
+        403:
+          description: Forbidden
+          content: { }
+        404:
+          description: Enrichment Information type is not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+      deprecated: false
+      x-codegen-request-body-name: eiJobObject
+      callbacks:
+        jobStatusNotification:
+          '{$request.body.jobStatusNotificationUri}':
+            post:
+              description: 'Notify about status changes for this EI job'
+              requestBody:
+                required: true
+                content:
+                  application/json:
+                    schema:
+                      "$ref": "#/components/schemas/EiJobStatusObject"
+              responses:
+                204:
+                  description: 'Notification received'
+        jobResult:
+          '{$request.body.jobResultUri}':
+            post:
+              description: 'Deliverance of EI'
+              requestBody:
+                required: true
+                content:
+                  application/json:
+                    schema:
+                      "$ref": "#/components/schemas/EiResultObject"
+              responses:
+                204:
+                  description: 'Information received'
+    delete:
+      tags:
+        - A1-EI (enrichment information)
+      summary: Individual EI job
+      operationId: deleteIndividualEiJobUsingDELETE
+      parameters:
+        - name: eiJobId
+          in: path
+          description: eiJobId
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Not used
+          content: { }
+        204:
+          description: Job deleted
+          content: { }
+        401:
+          description: Unauthorized
+          content: { }
+        403:
+          description: Forbidden
+          content: { }
+        404:
+          description: Enrichment Information job is not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+      deprecated: false
+  /A1-EI/v1/eitypes/{eiTypeId}:
+    get:
+      tags:
+      - A1-EI (enrichment information)
+      summary: Individual EI type
+      operationId: getEiTypeUsingGET
+      parameters:
+      - name: eiTypeId
+        in: path
+        description: eiTypeId
+        required: true
+        schema:
+          type: string
+      responses:
+        200:
+          description: EI type
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EiTypeObject'
+        401:
+          description: Unauthorized
+          content: { }
+        403:
+          description: Forbidden
+          content: { }
+        404:
+          description: Enrichment Information type is not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+      deprecated: false
+  /A1-EI/v1/eijobs:
+    get:
+      tags:
+      - A1-EI (enrichment information)
+      summary: EI job identifiers
+      description: query for EI job identifiers
+      operationId: getEiJobIdsUsingGET
+      parameters:
+      - name: eiTypeId
+        in: query
+        description: selects EI jobs of matching EI type
+        allowEmptyValue: false
+        schema:
+          type: string
+      - name: owner
+        in: query
+        description: selects EI jobs for one EI job owner
+        allowEmptyValue: false
+        schema:
+          type: string
+      responses:
+        200:
+          description: EI job identifiers
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: string
+        401:
+          description: Unauthorized
+          content: { }
+        403:
+          description: Forbidden
+          content: { }
+        404:
+          description: Enrichment Information type is not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+      deprecated: false
+  /A1-EI/v1/eijobs/{eiJobId}/status:
+    get:
+      tags:
+      - A1-EI (enrichment information)
+      summary: EI job status
+      operationId: getEiJobStatusUsingGET
+      parameters:
+      - name: eiJobId
+        in: path
+        description: eiJobId
+        required: true
+        schema:
+          type: string
+      responses:
+        200:
+          description: EI job status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EiJobStatusObject'
+        401:
+          description: Unauthorized
+          content: { }
+        403:
+          description: Forbidden
+          content: { }
+        404:
+          description: Enrichment Information job is not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+      deprecated: false
+  /A1-EI/v1/eitypes:
+    get:
+      tags:
+      - A1-EI (enrichment information)
+      summary: EI type identifiers
+      operationId: getEiTypeIdentifiersUsingGET
+      responses:
+        200:
+          description: EI type identifiers
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: string
+        401:
+          description: Unauthorized
+          content: { }
+        403:
+          description: Forbidden
+          content: { }
+        404:
+          description: Not Found
+          content: { }
+      deprecated: false
+components:
+  schemas:
+    EiTypeObject:
+      title: EiTypeObject
+      type: object
+      description: Information for an EI type
+    ProblemDetails:
+      title: ProblemDetails
+      type: object
+      properties:
+        detail:
+          type: string
+          description: A human-readable explanation specific to this occurrence of the problem.
+          example: EI job type not found
+        status:
+          type: integer
+          description: The HTTP status code generated by the origin server for this occurrence of the problem.
+          format: int32
+          example: 404
+        type:
+          type: string
+        title:
+          type: string
+        instance:
+          type: string
+      description: A problem detail to carry details in a HTTP response according to RFC 7807
+    EiJobStatusObject:
+      title: EiJobStatusObject
+      required:
+        - eiJobStatus
+      type: object
+      properties:
+        eiJobStatus:
+          type: string
+          description: |-
+            values:
+            ENABLED: the A1-EI producer is able to deliver EI result for the EI job
+            DISABLED: the A1-EI producer is unable to deliver EI result for the EI job
+          enum:
+            - ENABLED
+            - DISABLED
+      description: Status for an EI job
+    EiJobObject:
+      title: EiJobObject
+      required:
+        - eiTypeId
+        - jobDefinition
+        - jobResultUri
+      type: object
+      properties:
+        eiTypeId:
+          type: string
+          description: EI type Idenitifier of the EI job
+        jobResultUri:
+          type: string
+          description: The target URI of the EI data
+        jobStatusNotificationUri:
+          type: string
+          description: The target of EI job status notifications
+        jobDefinition:
+          type: object
+          properties: { }
+          description: EI type specific job data
+      description: Information for an Enrichment Information Job
+    EiResultObject:
+      title: EiResultObject
