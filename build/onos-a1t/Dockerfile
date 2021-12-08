@@ -1,0 +1,23 @@
+ARG ONOS_BUILD_VERSION=undefined
+
+FROM onosproject/golang-build:v1.0 as build
+
+ENV GO111MODULE=on
+ARG ONOS_MAKE_TARGET=build
+
+COPY Makefile go.mod go.sum /go/src/github.com/onosproject/onos-a1t/
+COPY cmd/ /go/src/github.com/onosproject/onos-a1t/cmd/
+COPY pkg/ /go/src/github.com/onosproject/onos-a1t/pkg/
+COPY vendor/ /go/src/github.com/onosproject/onos-a1t/vendor/
+COPY api/ /go/src/github.com/onosproject/onos-a1t/api
+
+RUN cd /go/src/github.com/onosproject/onos-a1t && GOFLAGS=-mod=vendor make ${ONOS_MAKE_TARGET}
+
+FROM alpine:3.11
+RUN apk add libc6-compat
+
+USER nobody
+
+COPY --from=build /go/src/github.com/onosproject/onos-a1t/build/_output/onos-a1t /usr/local/bin/onos-a1t
+
+ENTRYPOINT ["onos-a1t"]

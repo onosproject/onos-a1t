@@ -1,3 +1,18 @@
+build/_output/*
+**/_output
+*.DS_Store
+coverage.txt
+*.coverprofile
+.idea
+.vscode
+*.o
+*.a
+.project
+.cproject
+.eclipse
+.settings/
+vendor
+
 # Binaries for programs and plugins
 *.exe
 *.exe~
@@ -13,3 +28,8 @@
 
 # Dependency directories (remove the comment below to include it)
 # vendor/
+
+# Jenkins report files
+*report*.xml
+*coverage*.xml
+*-output.out

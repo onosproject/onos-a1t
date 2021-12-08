@@ -1,0 +1,95 @@
+syntax = "proto3";
+
+// Package onos.a1t defines interfaces for managing A1 policies
+package onos.a1t;
+
+import "google/protobuf/any.proto";
+
+
+service A1T {
+  rpc Create (CreateRequest) returns (CreateResponse) {
+  }
+
+  rpc Get (GetRequest) returns (GetResponse) {
+  }
+
+  rpc Update (UpdateRequest) returns (UpdateResponse) {
+  }
+
+  rpc Delete (DeleteRequest) returns (DeleteResponse) {
+  }
+
+  rpc List (GetRequest) returns (ListResponse) {
+  }
+
+  rpc Watch (GetRequest) returns (stream GetResponse) {
+  }
+}
+
+message CreateRequest {
+    Object object = 1;
+}
+
+message CreateResponse {
+    Object object = 1;
+}
+
+message GetRequest {
+    string id = 1;
+}
+
+message GetResponse {
+    Object object = 1;
+}
+
+message ListResponse {
+    repeated Object objects = 1;
+}
+
+message UpdateRequest {
+    Object object = 1;
+}
+
+message UpdateResponse {
+    Object object = 1;
+}
+
+message DeleteRequest {
+    string id = 1;
+}
+
+message DeleteResponse {
+}
+
+// Object is an one of the following: a kind (archetype of entity or relation), an entity, a relation
+message Object {
+    string id = 1;
+    uint64 revision = 2;
+  
+    enum Type {
+      UNSPECIFIED = 0;
+      POLICY = 1;
+      EIJOB = 2;
+      SUBSCRIPTION = 3;
+    }
+    Type type = 3;
+  
+    oneof obj {
+      Policy policy = 4;
+      EIJob eijob = 5;
+    } 
+}
+
+message Policy {
+    string id = 1;
+    string typeid = 2;
+    google.protobuf.Any object = 3;
+    google.protobuf.Any status = 4;
+}
+
+message EIJob {
+    string id = 1;
+    string typeid = 2;
+    google.protobuf.Any object = 3;
+    google.protobuf.Any status = 4;   
+}
