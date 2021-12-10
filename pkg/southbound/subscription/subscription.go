@@ -10,7 +10,7 @@ import (
 	topoapi "github.com/onosproject/onos-api/go/onos/topo"
 	"github.com/onosproject/onos-lib-go/pkg/logging"
 
-	controller "github.com/onosproject/onos-a1t/pkg/controller"
+	"github.com/onosproject/onos-a1t/pkg/controller"
 	substore "github.com/onosproject/onos-a1t/pkg/store/subscription"
 )
 
@@ -76,33 +76,33 @@ func (sm *SubscriptionManager) watchXappChanges(ctx context.Context) error {
 	return nil
 }
 
-func (sm *SubscriptionManager) createSubscription(ctx context.Context, xappinfo topoapi.XAppInfo) error {
-
-	subKey := substore.NewSubscriptionKey(xappinfo.String())
-
-	policyTypes := []string{}
-	a1polTypes := xappinfo.GetA1PolicyTypes()
-
-	for _, pt := range a1polTypes {
-		policyTypes = append(policyTypes, pt.String())
-	}
-
-	subValue := substore.SubscriptionValue{
-		Client: substore.Client{},
-		Subscription: substore.Subscription{
-			Types: policyTypes,
-		},
-	}
-
-	_, err := sm.subscriptionStore.Put(ctx, subKey, subValue)
-	if err != nil {
-		log.Warn(err)
-		return err
-	}
-
-	return nil
-}
-
-func (sm *SubscriptionManager) updateSubscription() {}
-
-func (sm *SubscriptionManager) deleteSubscription() {}
+//func (sm *SubscriptionManager) createSubscription(ctx context.Context, xappinfo topoapi.XAppInfo) error {
+//
+//	subKey := substore.NewSubscriptionKey(xappinfo.String())
+//
+//	policyTypes := []string{}
+//	a1polTypes := xappinfo.GetA1PolicyTypes()
+//
+//	for _, pt := range a1polTypes {
+//		policyTypes = append(policyTypes, pt.String())
+//	}
+//
+//	subValue := substore.Value{
+//		Client: substore.Client{},
+//		Subscription: substore.Subscription{
+//			Types: policyTypes,
+//		},
+//	}
+//
+//	_, err := sm.subscriptionStore.Put(ctx, subKey, subValue)
+//	if err != nil {
+//		log.Warn(err)
+//		return err
+//	}
+//
+//	return nil
+//}
+////
+////func (sm *SubscriptionManager) updateSubscription() {}
+////
+////func (sm *SubscriptionManager) deleteSubscription() {}

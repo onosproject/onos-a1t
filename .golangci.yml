@@ -1,7 +1,6 @@
 linters:
   enable:
     - gofmt
-    - revive
     - misspell
     - typecheck
     - errcheck

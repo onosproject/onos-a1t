@@ -18,15 +18,15 @@ import (
 
 var log = logging.GetLogger("store", "a1p")
 
-// A1PStore a1 policies store interface
+// Store a1 policies store interface
 type Store interface {
-	Put(ctx context.Context, key A1PKey, value interface{}) (*A1PEntry, error)
+	Put(ctx context.Context, key Key, value interface{}) (*Entry, error)
 
-	Get(ctx context.Context, key A1PKey) (*A1PEntry, error)
+	Get(ctx context.Context, key Key) (*Entry, error)
 
-	Delete(ctx context.Context, key A1PKey) error
+	Delete(ctx context.Context, key Key) error
 
-	Entries(ctx context.Context, ch chan<- *A1PEntry) error
+	Entries(ctx context.Context, ch chan<- *Entry) error
 
 	Watch(ctx context.Context, ch chan<- store.Event) error
 }
@@ -36,32 +36,25 @@ type PolicyTarget struct {
 	PolicyStatusObject map[string]interface{}
 }
 
-type A1PKey struct {
+type Key struct {
 	PolicyId     string
 	PolicyTypeId string
 }
 
-type A1PValue struct {
+type Value struct {
 	NotificationDestination string
 	PolicyObject            map[string]interface{}
 	PolicyStatusObjects     map[string]interface{}
 	Targets                 map[string]PolicyTarget
 }
 
-type A1PEntry struct {
-	Key   A1PKey
+type Entry struct {
+	Key   Key
 	Value interface{}
 }
 
-func NewA1PKey(policyID, policyTypeId string) *A1PKey {
-	return &A1PKey{
-		PolicyId:     policyID,
-		PolicyTypeId: policyTypeId,
-	}
-}
-
 type a1pStore struct {
-	policies map[A1PKey]*A1PEntry
+	policies map[Key]*Entry
 	mu       sync.RWMutex
 	watchers *store.Watchers
 }
@@ -70,12 +63,12 @@ type a1pStore struct {
 func NewStore() Store {
 	watchers := store.NewWatchers()
 	return &a1pStore{
-		policies: make(map[A1PKey]*A1PEntry),
+		policies: make(map[Key]*Entry),
 		watchers: watchers,
 	}
 }
 
-func (s *a1pStore) Entries(ctx context.Context, ch chan<- *A1PEntry) error {
+func (s *a1pStore) Entries(ctx context.Context, ch chan<- *Entry) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -92,7 +85,7 @@ func (s *a1pStore) Entries(ctx context.Context, ch chan<- *A1PEntry) error {
 	return nil
 }
 
-func (s *a1pStore) Delete(ctx context.Context, key A1PKey) error {
+func (s *a1pStore) Delete(ctx context.Context, key Key) error {
 	// TODO check the key and make sure it is not empty
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -101,10 +94,10 @@ func (s *a1pStore) Delete(ctx context.Context, key A1PKey) error {
 
 }
 
-func (s *a1pStore) Put(ctx context.Context, key A1PKey, value interface{}) (*A1PEntry, error) {
+func (s *a1pStore) Put(ctx context.Context, key Key, value interface{}) (*Entry, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	entry := &A1PEntry{
+	entry := &Entry{
 		Key:   key,
 		Value: value,
 	}
@@ -118,7 +111,7 @@ func (s *a1pStore) Put(ctx context.Context, key A1PKey, value interface{}) (*A1P
 
 }
 
-func (s *a1pStore) Get(ctx context.Context, key A1PKey) (*A1PEntry, error) {
+func (s *a1pStore) Get(ctx context.Context, key Key) (*Entry, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	if v, ok := s.policies[key]; ok {

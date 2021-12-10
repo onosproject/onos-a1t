@@ -9,16 +9,16 @@ import (
 	echomiddleware "github.com/labstack/echo/v4/middleware"
 
 	"github.com/onosproject/onos-a1t/pkg/controller"
-	handler "github.com/onosproject/onos-a1t/pkg/handler"
+	"github.com/onosproject/onos-a1t/pkg/handler"
 	api "github.com/onosproject/onos-a1t/pkg/northbound/a1ap/policy_management"
 )
 
-type RestServer struct {
+type Server struct {
 	echo    *echo.Echo
 	baseURL string
 }
 
-func NewRestServer(baseURL string, broker controller.Broker) (*RestServer, error) {
+func NewRestServer(baseURL string, broker controller.Broker) (*Server, error) {
 
 	// swagger, err := api.GetSwagger()
 	// if err != nil {
@@ -35,7 +35,7 @@ func NewRestServer(baseURL string, broker controller.Broker) (*RestServer, error
 
 	api.RegisterHandlers(e, a1pWraper)
 
-	rest := &RestServer{
+	rest := &Server{
 		baseURL: baseURL,
 		echo:    e,
 	}
@@ -43,7 +43,7 @@ func NewRestServer(baseURL string, broker controller.Broker) (*RestServer, error
 	return rest, nil
 }
 
-func (r *RestServer) Start() {
+func (r *Server) Start() {
 	r.echo.Logger.Fatal(r.echo.Start(r.baseURL))
 
 }
