@@ -5,11 +5,10 @@
 package manager
 
 import (
+	"github.com/onosproject/onos-a1t/pkg/controller"
 	nbi "github.com/onosproject/onos-a1t/pkg/northbound/cli"
 	nbirest "github.com/onosproject/onos-a1t/pkg/northbound/rest"
-	subs "github.com/onosproject/onos-a1t/pkg/subscription"
-
-	controller "github.com/onosproject/onos-a1t/pkg/controller"
+	subs "github.com/onosproject/onos-a1t/pkg/southbound/subscription"
 
 	a1eistore "github.com/onosproject/onos-a1t/pkg/store/a1ei"
 	a1pstore "github.com/onosproject/onos-a1t/pkg/store/a1p"
@@ -31,7 +30,7 @@ type Config struct {
 }
 
 type Manager struct {
-	restserver        *nbirest.RestServer
+	restserver        *nbirest.Server
 	submanager        *subs.SubscriptionManager
 	broker            controller.Broker
 	config            Config

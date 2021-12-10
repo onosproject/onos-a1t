@@ -19,16 +19,16 @@ import (
 var log = logging.GetLogger("store", "subscription")
 
 type Store interface {
-	Put(ctx context.Context, key SubscriptionKey, value interface{}) (*SubscriptionEntry, error)
+	Put(ctx context.Context, key Key, value interface{}) (*Entry, error)
 
 	// Get gets a metric store entry based on a given key
-	Get(ctx context.Context, key SubscriptionKey) (*SubscriptionEntry, error)
+	Get(ctx context.Context, key Key) (*Entry, error)
 
 	// Delete deletes an entry based on a given key
-	Delete(ctx context.Context, key SubscriptionKey) error
+	Delete(ctx context.Context, key Key) error
 
 	// Entries list all of the metric store entries
-	Entries(ctx context.Context, ch chan<- *SubscriptionEntry) error
+	Entries(ctx context.Context, ch chan<- *Entry) error
 
 	// Watch measurement store changes
 	Watch(ctx context.Context, ch chan<- store.Event) error
@@ -45,28 +45,28 @@ type Subscription struct {
 	ID    string
 }
 
-type SubscriptionKey struct {
+type Key struct {
 	TargetID string
 }
 
-type SubscriptionValue struct {
+type Value struct {
 	Client       Client
 	Subscription Subscription
 }
 
-type SubscriptionEntry struct {
-	SubscriptionKey SubscriptionKey
-	Value           interface{}
+type Entry struct {
+	Key   Key
+	Value interface{}
 }
 
-func NewSubscriptionKey(targetID string) SubscriptionKey {
-	return SubscriptionKey{
+func NewSubscriptionKey(targetID string) Key {
+	return Key{
 		TargetID: targetID,
 	}
 }
 
 type subscriptionstore struct {
-	subscriptions map[SubscriptionKey]*SubscriptionEntry
+	subscriptions map[Key]*Entry
 	mu            sync.RWMutex
 	watchers      *store.Watchers
 }
@@ -75,12 +75,12 @@ type subscriptionstore struct {
 func NewStore() Store {
 	watchers := store.NewWatchers()
 	return &subscriptionstore{
-		subscriptions: make(map[SubscriptionKey]*SubscriptionEntry),
+		subscriptions: make(map[Key]*Entry),
 		watchers:      watchers,
 	}
 }
 
-func (s *subscriptionstore) Entries(ctx context.Context, ch chan<- *SubscriptionEntry) error {
+func (s *subscriptionstore) Entries(ctx context.Context, ch chan<- *Entry) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -97,7 +97,7 @@ func (s *subscriptionstore) Entries(ctx context.Context, ch chan<- *Subscription
 	return nil
 }
 
-func (s *subscriptionstore) Delete(ctx context.Context, key SubscriptionKey) error {
+func (s *subscriptionstore) Delete(ctx context.Context, key Key) error {
 	// TODO check the key and make sure it is not empty
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -106,12 +106,12 @@ func (s *subscriptionstore) Delete(ctx context.Context, key SubscriptionKey) err
 
 }
 
-func (s *subscriptionstore) Put(ctx context.Context, key SubscriptionKey, value interface{}) (*SubscriptionEntry, error) {
+func (s *subscriptionstore) Put(ctx context.Context, key Key, value interface{}) (*Entry, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	entry := &SubscriptionEntry{
-		SubscriptionKey: key,
-		Value:           value,
+	entry := &Entry{
+		Key:   key,
+		Value: value,
 	}
 	s.subscriptions[key] = entry
 	s.watchers.Send(store.Event{
@@ -123,7 +123,7 @@ func (s *subscriptionstore) Put(ctx context.Context, key SubscriptionKey, value 
 
 }
 
-func (s *subscriptionstore) Get(ctx context.Context, key SubscriptionKey) (*SubscriptionEntry, error) {
+func (s *subscriptionstore) Get(ctx context.Context, key Key) (*Entry, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	if v, ok := s.subscriptions[key]; ok {
