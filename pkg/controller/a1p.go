@@ -104,7 +104,10 @@ func (a1p *a1pController) HandlePolicyCreate(ctx context.Context, policyID, poli
 	}
 
 	ch := make(chan *substore.Entry)
-	substore.SubscriptionsByTypeID(ctx, a1p.subscriptionStore, substore.POLICY, policyTypeID, ch)
+	err := substore.SubscriptionsByTypeID(ctx, a1p.subscriptionStore, substore.POLICY, policyTypeID, ch)
+	if err != nil {
+		return err
+	}
 
 	policyTargets := make(map[string]a1pstore.PolicyTarget)
 
@@ -137,7 +140,7 @@ func (a1p *a1pController) HandlePolicyCreate(ctx context.Context, policyID, poli
 		PolicyStatus:            policyStatus,
 	}
 
-	_, err := a1p.policiesStore.Put(ctx, a1pKey, a1pValue)
+	_, err = a1p.policiesStore.Put(ctx, a1pKey, a1pValue)
 	if err != nil {
 		return err
 	}
@@ -174,12 +177,14 @@ func (a1p *a1pController) HandlePolicyUpdate() error {
 }
 
 func getSubscriptionPolicyTypes(ctx context.Context, a1p *a1pController) map[string]struct{} {
-
-	ch := make(chan *substore.Entry)
-	substore.SubscriptionsByType(ctx, a1p.subscriptionStore, substore.POLICY, ch)
-
-	tmpSubs := make(map[string]struct{})
 	var exists = struct{}{}
+	tmpSubs := make(map[string]struct{})
+	ch := make(chan *substore.Entry)
+
+	err := substore.SubscriptionsByType(ctx, a1p.subscriptionStore, substore.POLICY, ch)
+	if err != nil {
+		return tmpSubs
+	}
 
 	for subEntry := range ch {
 		subValue := subEntry.Value.(substore.Value)
