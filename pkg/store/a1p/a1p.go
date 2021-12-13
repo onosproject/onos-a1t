@@ -32,8 +32,8 @@ type Store interface {
 }
 
 type PolicyTarget struct {
-	TargetID           string
-	PolicyStatusObject map[string]interface{}
+	Address            string
+	PolicyStatusObject map[string]string
 }
 
 type Key struct {
@@ -43,9 +43,10 @@ type Key struct {
 
 type Value struct {
 	NotificationDestination string
-	PolicyObject            map[string]interface{}
-	PolicyStatusObjects     map[string]interface{}
+	PolicyObject            map[string]string
+	PolicyStatusObjects     map[string]string
 	Targets                 map[string]PolicyTarget
+	PolicyStatus            bool
 }
 
 type Entry struct {

@@ -34,15 +34,29 @@ type Store interface {
 	Watch(ctx context.Context, ch chan<- store.Event) error
 }
 
+type SubscriptionType int
+
+const (
+	POLICY int = iota
+	EIJOB
+)
+
+func (st SubscriptionType) String() string {
+	return []string{"Policy", "EIJob"}[st]
+}
+
 type Client struct {
-	Address  string
+	Address  string // Defined by tuple (ip:port)
 	CertPath string
 	KeyPath  string
 }
 
 type Subscription struct {
-	Types []string
-	ID    string
+	Type        string //oneof const POLICY or EIJOB Type
+	TypeID      string
+	Name        string
+	Version     string
+	Description string
 }
 
 type Key struct {
@@ -50,8 +64,8 @@ type Key struct {
 }
 
 type Value struct {
-	Client       Client
-	Subscription Subscription
+	Client        Client
+	Subscriptions []Subscription
 }
 
 type Entry struct {

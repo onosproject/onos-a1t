@@ -8,7 +8,7 @@ import (
 	"github.com/onosproject/onos-a1t/pkg/controller"
 	nbi "github.com/onosproject/onos-a1t/pkg/northbound/cli"
 	nbirest "github.com/onosproject/onos-a1t/pkg/northbound/rest"
-	subs "github.com/onosproject/onos-a1t/pkg/southbound/subscription"
+	subs "github.com/onosproject/onos-a1t/pkg/subscription"
 
 	a1eistore "github.com/onosproject/onos-a1t/pkg/store/a1ei"
 	a1pstore "github.com/onosproject/onos-a1t/pkg/store/a1p"
