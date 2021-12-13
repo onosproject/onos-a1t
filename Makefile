@@ -12,6 +12,9 @@ build: # @HELP build the Go binaries and run all validations (default)
 build:
 	GOPRIVATE="github.com/onosproject/*" go build -o build/_output/onos-a1t ./cmd/onos-a1t
 
+build-tools:=$(shell if [ ! -d "./build/build-tools" ]; then cd build && git clone https://github.com/onosproject/build-tools.git; fi)
+include ./build/build-tools/make/onf-common.mk
+
 #ToDo - run it through Docker container in the future
 build_api:
 	build/bin/compile-a1ap.sh
@@ -24,28 +27,8 @@ oapi-codegen:
 openapi-spec-validator:
 	openapi-spec-validator || ( cd .. && pip3 install openapi-spec-validator==${OAPI_SPEC_VALIDATOR_VERSION})
 
-build-tools: # @HELP install the ONOS build tools if needed
-	@if [ ! -d "../build-tools" ]; then cd .. && git clone https://github.com/onosproject/build-tools.git; fi
-
-jenkins-tools: # @HELP installs tooling needed for Jenkins
-	cd .. && go get -u github.com/jstemmer/go-junit-report && go get github.com/t-yuki/gocover-cobertura
-
-deps: # @HELP ensure that the required dependencies are in place
-	GOPRIVATE="github.com/onosproject/*" go build -v ./...
-	bash -c "diff -u <(echo -n) <(git diff go.mod)"
-	bash -c "diff -u <(echo -n) <(git diff go.sum)"
-
-license_check: build-tools # @HELP examine and ensure license headers exist
-	./../build-tools/licensing/boilerplate.py -v --rootdir=${CURDIR} --boilerplate LicenseRef-ONF-Member-Only-1.0
-
-linters: golang-ci # @HELP examines Go source code and reports coding problems
-	golangci-lint run --timeout 10m
-
-golang-ci: # @HELP install golang-ci if not present
-	golangci-lint --version || curl -sfL https://install.goreleaser.com/github.com/golangci/golangci-lint.sh | sh -s -- -b `go env GOPATH`/bin v1.42.0
-
-gofmt: # @HELP run the Go format validation
-	bash -c "diff -u <(echo -n) <(gofmt -d pkg/ cmd/ tests/)"
+license_check_a1t:  # @HELP examine and ensure license headers exist
+	./build/build-tools/licensing/boilerplate.py -v --rootdir=${CURDIR} --skipped-dir pkg/northbound/a1ap --skipped-dir api --skipped-dir build --boilerplate LicenseRef-ONF-Member-Only-1.0
 
 buflint: #@HELP run the "buf check lint" command on the proto files in 'api'
 	docker run -it -v `pwd`:/go/src/github.com/onosproject/onos-a1t \
@@ -53,8 +36,12 @@ buflint: #@HELP run the "buf check lint" command on the proto files in 'api'
 		bufbuild/buf:${BUF_VERSION} check lint
 
 test: # @HELP run the unit tests and source code validation producing a golang style report
-test: build deps linters license_check
+test: build deps linters license_check_a1t
 	go test -race github.com/onosproject/onos-a1t/...
+
+jenkins-test: # @HELP run the unit tests and source code validation producing a junit style report for Jenkins
+jenkins-test: build deps license_check_a1t linters
+	TEST_PACKAGES=github.com/onosproject/onos-a1t/... ./build/build-tools/build/jenkins/make-unit
 
 onos-a1t-docker: # @HELP build onos-a1t Docker image
 onos-a1t-docker:
@@ -72,6 +59,14 @@ kind: images
 	kind load docker-image onosproject/onos-a1t:${ONOS_A1T_VERSION}
 
 all: build images
+
+publish: # @HELP publish version on github and dockerhub
+	./build/build-tools/publish-version ${VERSION} onosproject/onos-a1t
+
+jenkins-publish: jenkins-tools # @HELP Jenkins calls this to publish artifacts
+	./build/bin/push-images
+	./build/build-tools/release-merge-commit
+
 
 protos: # @HELP build a1t golang protobuffer (TEMP) # TODO move .proto to onos-api
 protos:
