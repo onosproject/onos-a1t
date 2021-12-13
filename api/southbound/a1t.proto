@@ -5,7 +5,6 @@ package onos.a1t;
 
 import "google/protobuf/any.proto";
 
-
 service A1T {
   rpc Create (CreateRequest) returns (CreateResponse) {
   }
@@ -55,10 +54,11 @@ message UpdateResponse {
 }
 
 message DeleteRequest {
-    string id = 1;
+    Object object = 1;
 }
 
 message DeleteResponse {
+    Object object = 1;
 }
 
 // Object is an one of the following: a kind (archetype of entity or relation), an entity, a relation
@@ -84,12 +84,29 @@ message Policy {
     string id = 1;
     string typeid = 2;
     google.protobuf.Any object = 3;
-    google.protobuf.Any status = 4;
+    Status status = 4;
 }
 
 message EIJob {
     string id = 1;
     string typeid = 2;
-    google.protobuf.Any object = 3;
-    google.protobuf.Any status = 4;   
+    string object = 3;
+    Status status = 4;   
+}
+
+message Status {
+    message Problem {
+        string Detail = 1;
+        string Instance = 2;
+        string Status = 3;
+        string Title = 4;
+        string Type = 5;
+    }
+
+    string object = 1;
+    Problem problem = 2;
+}
+
+message ObjectValue {
+    map<string, string> value = 1;
 }

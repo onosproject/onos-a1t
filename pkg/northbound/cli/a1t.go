@@ -18,7 +18,7 @@ import (
 	"google.golang.org/grpc"
 )
 
-// NewService returns a new KPIMON interface service.
+// NewService returns a new A1T interface service.
 func NewService(subscriptionStore substore.Store, policiesStore a1pstore.Store, eijobsStore a1eistore.Store) service.Service {
 	return &Service{
 		subscriptionStore: subscriptionStore,
@@ -40,14 +40,16 @@ func (s Service) Register(r *grpc.Server) {
 	server := &Server{
 		subscriptionStore: s.subscriptionStore,
 		policiesStore:     s.policiesStore,
+		eijobsStore:       s.eijobsStore,
 	}
 	a1tapi.RegisterA1TServer(r, server)
 }
 
-// Server implements the KPIMON gRPC service for administrative facilities.
+// Server implements the A1T gRPC service for administrative facilities.
 type Server struct {
 	subscriptionStore substore.Store
 	policiesStore     a1pstore.Store
+	eijobsStore       a1eistore.Store
 }
 
 func (s *Server) Get(ctx context.Context, request *a1tapi.GetRequest) (*a1tapi.GetResponse, error) {

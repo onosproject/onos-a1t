@@ -12,14 +12,8 @@ import (
 	sbi "github.com/onosproject/onos-lib-go/pkg/southbound"
 )
 
-type Client struct {
-	address  string
-	certPath string
-	keyPath  string
-}
-
-func GetConnection(ctx context.Context, client Client) (*grpc.ClientConn, error) {
-	clientConn, err := sbi.Connect(ctx, client.address, client.certPath, client.keyPath)
+func GetConnection(ctx context.Context, address, certPath, keyPath string) (*grpc.ClientConn, error) {
+	clientConn, err := sbi.Connect(ctx, address, certPath, keyPath)
 
 	if err != nil {
 		return nil, err

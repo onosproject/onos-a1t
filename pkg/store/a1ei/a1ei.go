@@ -35,6 +35,7 @@ type Value struct {
 	NotificationDestination string
 	EIJobObject             map[string]interface{}
 	EIJobStatusObjects      map[string]interface{}
+	Targets                 map[string]interface{}
 }
 
 type Key struct {
