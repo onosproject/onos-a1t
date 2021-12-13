@@ -10,6 +10,8 @@ COPY cmd/ /go/src/github.com/onosproject/onos-a1t/cmd/
 COPY pkg/ /go/src/github.com/onosproject/onos-a1t/pkg/
 COPY vendor/ /go/src/github.com/onosproject/onos-a1t/vendor/
 COPY api/ /go/src/github.com/onosproject/onos-a1t/api
+COPY build/ /go/src/github.com/onosproject/onos-a1t/build
+
 
 RUN cd /go/src/github.com/onosproject/onos-a1t && GOFLAGS=-mod=vendor make ${ONOS_MAKE_TARGET}
 
