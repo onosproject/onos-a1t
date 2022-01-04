@@ -58,7 +58,7 @@ func (sm *SubscriptionManager) watchXappChanges(ctx context.Context) error {
 	}
 
 	for topoEvent := range ch {
-		log.Debugf("Received topo event: %v", topoEvent)
+		log.Infof("Received topo event: %v", topoEvent)
 
 		if topoEvent.Object.GetEntity().GetKindID() == topoapi.XAPP {
 
