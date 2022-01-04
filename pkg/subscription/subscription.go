@@ -6,11 +6,12 @@ package subscription
 
 import (
 	"context"
+	"github.com/onosproject/onos-a1t/pkg/rnib"
 
 	topoapi "github.com/onosproject/onos-api/go/onos/topo"
 	"github.com/onosproject/onos-lib-go/pkg/logging"
 
-	controller "github.com/onosproject/onos-a1t/pkg/controller"
+	"github.com/onosproject/onos-a1t/pkg/controller"
 	substore "github.com/onosproject/onos-a1t/pkg/store/subscription"
 )
 
@@ -19,11 +20,11 @@ var log = logging.GetLogger("subscription")
 type SubscriptionManager struct {
 	broker            controller.Broker
 	subscriptionStore substore.Store
-	rnibClient        Client
+	rnibClient        rnib.Client
 }
 
 func NewSubscriptionManager(broker controller.Broker, subscriptionStore substore.Store) (*SubscriptionManager, error) {
-	rnibClient, err := NewClient()
+	rnibClient, err := rnib.NewClient()
 	if err != nil {
 		return &SubscriptionManager{}, err
 	}
@@ -64,6 +65,10 @@ func (sm *SubscriptionManager) watchXappChanges(ctx context.Context) error {
 
 			if topoEvent.Type == topoapi.EventType_ADDED || topoEvent.Type == topoapi.EventType_NONE {
 				log.Info("xApp Added")
+				err = sm.rnibClient.AddA1TXappRelation(ctx, topoEvent.Object.GetID())
+				if err != nil {
+					log.Error(err)
+				}
 				//TODO Create xapp subscription and get xApp Aspects to get "interests" in a1p and/or a1ei
 
 			} else if topoEvent.Type == topoapi.EventType_REMOVED {

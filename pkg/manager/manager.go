@@ -5,10 +5,14 @@
 package manager
 
 import (
+	"context"
 	"github.com/onosproject/onos-a1t/pkg/controller"
 	nbi "github.com/onosproject/onos-a1t/pkg/northbound/cli"
 	nbirest "github.com/onosproject/onos-a1t/pkg/northbound/rest"
+	"github.com/onosproject/onos-a1t/pkg/rnib"
 	subs "github.com/onosproject/onos-a1t/pkg/subscription"
+	"strconv"
+	"strings"
 
 	a1eistore "github.com/onosproject/onos-a1t/pkg/store/a1ei"
 	a1pstore "github.com/onosproject/onos-a1t/pkg/store/a1p"
@@ -37,6 +41,7 @@ type Manager struct {
 	subscriptionStore substore.Store
 	policyStore       a1pstore.Store
 	eijobsStore       a1eistore.Store
+	rnibClient        rnib.Client
 }
 
 func NewManager(config Config) (*Manager, error) {
@@ -57,6 +62,11 @@ func NewManager(config Config) (*Manager, error) {
 		return nil, err
 	}
 
+	rnibClient, err := rnib.NewClient()
+	if err != nil {
+		return nil, err
+	}
+
 	return &Manager{
 		restserver:        restServer,
 		submanager:        subManager,
@@ -65,6 +75,7 @@ func NewManager(config Config) (*Manager, error) {
 		policyStore:       policyStore,
 		eijobsStore:       eijobsStore,
 		config:            config,
+		rnibClient:        rnibClient,
 	}, nil
 }
 
@@ -92,8 +103,21 @@ func (m *Manager) startNorthboundServer() error {
 	return <-doneCh
 }
 
+func (m *Manager) registerA1TtoRnib() error {
+	nbPort, err := strconv.Atoi(strings.Split(m.config.BaseURL, ":")[1])
+	if err != nil {
+		return err
+	}
+	return m.rnibClient.AddA1TEntity(context.Background(), uint32(nbPort))
+}
+
 func (m *Manager) start() error {
-	err := m.startNorthboundServer()
+	err := m.registerA1TtoRnib()
+	if err != nil {
+		return err
+	}
+
+	err = m.startNorthboundServer()
 	if err != nil {
 		log.Warn(err)
 		return err
