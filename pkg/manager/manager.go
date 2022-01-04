@@ -99,13 +99,13 @@ func (m *Manager) start() error {
 		return err
 	}
 
-	m.restserver.Start()
-
 	err = m.submanager.Start()
 	if err != nil {
 		log.Warn(err)
 		return err
 	}
+
+	m.restserver.Start()
 
 	return nil
 }

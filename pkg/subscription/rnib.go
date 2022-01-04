@@ -44,12 +44,12 @@ func (c *Client) GetXappAspects(ctx context.Context, xappID topoapi.ID) (*topoap
 	return xAppInfo, err
 }
 
-func getControlRelationFilter() *topoapi.Filters {
+func getXappFilter() *topoapi.Filters {
 	controlRelationFilter := &topoapi.Filters{
 		KindFilter: &topoapi.Filter{
 			Filter: &topoapi.Filter_Equal_{
 				Equal_: &topoapi.EqualFilter{
-					Value: topoapi.CONTROLS,
+					Value: topoapi.XAPP,
 				},
 			},
 		},
@@ -59,7 +59,7 @@ func getControlRelationFilter() *topoapi.Filters {
 
 // WatchTopoXapps watch xapp node connection changes
 func (c *Client) WatchTopoXapps(ctx context.Context, ch chan topoapi.Event) error {
-	err := c.client.Watch(ctx, ch, toposdk.WithWatchFilters(getControlRelationFilter()))
+	err := c.client.Watch(ctx, ch, toposdk.WithWatchFilters(getXappFilter()))
 	if err != nil {
 		return err
 	}
