@@ -31,11 +31,17 @@ type Store interface {
 	Watch(ctx context.Context, ch chan<- store.Event) error
 }
 
+type EIJobTarget struct {
+	Address           string
+	EIJobStatusObject map[string]string
+}
+
 type Value struct {
 	NotificationDestination string
-	EIJobObject             map[string]interface{}
-	EIJobStatusObjects      map[string]interface{}
-	Targets                 map[string]interface{}
+	EIJobObject             map[string]string
+	EIJobStatusObjects      map[string]string
+	Targets                 map[string]EIJobTarget
+	EIJobStatus             bool
 }
 
 type Key struct {
