@@ -8,34 +8,29 @@ import (
 	"context"
 	"fmt"
 
-	prototypes "github.com/gogo/protobuf/types"
-
 	a1tsb "github.com/onosproject/onos-a1t/pkg/southbound"
 	a1tapi "github.com/onosproject/onos-a1t/pkg/southbound/a1t"
 )
 
-func CreateEIjob(ctx context.Context, address, certPath, keyPath string, eiJobID, eiJobTypeID string, eiJobObject map[string]string) error {
+//ToDo - eiJobObject should be of type EIJobObject as in onos-a1t/pkg/northbound/a1ap/enrichment_information/a1ap_ei.go
+func CreateEIjob(ctx context.Context, address, certPath, keyPath string, eiJobID, eiJobTypeID, eiJobObject string) error {
 	conn, err := a1tsb.GetConnection(ctx, address, certPath, keyPath)
 	if err != nil {
 		return err
 	}
 	defer conn.Close()
 
-	var eiJobObjectValue *prototypes.Any
-	objValue := &a1tapi.ObjectValue{Value: eiJobObject}
-	eiJobObjectValue, err = prototypes.MarshalAny(objValue)
-	if err != nil {
-		return err
-	}
-
 	request := a1tapi.CreateRequest{
 		Object: &a1tapi.Object{
+			//ToDo - add in ID and Revision in the future
 			Type: a1tapi.Object_EIJOB,
-			Obj: &a1tapi.Object_Policy{
-				Policy: &a1tapi.Policy{
+			Obj: &a1tapi.Object_Eijob{
+				Eijob: &a1tapi.EIJob{
 					Id:     eiJobID,
 					Typeid: eiJobTypeID,
-					Object: eiJobObjectValue,
+					Object: eiJobObject,
+					//ToDo - add in status in the future
+					//Status: &a1tapi.Status{}
 				},
 			},
 		},
@@ -54,7 +49,8 @@ func CreateEIjob(ctx context.Context, address, certPath, keyPath string, eiJobID
 	return nil
 }
 
-func DeleteEIjob(ctx context.Context, address, certPath, keyPath string, eiJobID, eiJobTypeID string) error {
+//ToDo - eiJobObject should be of type EIJobObject as in onos-a1t/pkg/northbound/a1ap/enrichment_information/a1ap_ei.go
+func DeleteEIjob(ctx context.Context, address, certPath, keyPath string, eiJobID, eiJobTypeID, eiJobObject string) error {
 	conn, err := a1tsb.GetConnection(ctx, address, certPath, keyPath)
 	if err != nil {
 		return err
@@ -63,11 +59,15 @@ func DeleteEIjob(ctx context.Context, address, certPath, keyPath string, eiJobID
 
 	request := a1tapi.DeleteRequest{
 		Object: &a1tapi.Object{
+			//ToDo - add in ID and Revision in the future
 			Type: a1tapi.Object_EIJOB,
-			Obj: &a1tapi.Object_Policy{
-				Policy: &a1tapi.Policy{
+			Obj: &a1tapi.Object_Eijob{
+				Eijob: &a1tapi.EIJob{
 					Id:     eiJobID,
 					Typeid: eiJobTypeID,
+					Object: eiJobObject,
+					//ToDo - add in status in the future
+					//Status: &a1tapi.Status{}
 				},
 			},
 		},

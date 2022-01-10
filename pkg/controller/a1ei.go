@@ -7,6 +7,7 @@ package controller
 import (
 	"context"
 	"fmt"
+	A1apEnrichmentInformation "github.com/onosproject/onos-a1t/pkg/northbound/a1ap/enrichment_information"
 	a1eisbi "github.com/onosproject/onos-a1t/pkg/southbound/a1ei"
 	a1eistore "github.com/onosproject/onos-a1t/pkg/store/a1ei"
 	substore "github.com/onosproject/onos-a1t/pkg/store/subscription"
@@ -14,14 +15,16 @@ import (
 	// a1einbi "github.com/onosproject/onos-a1t/pkg/northbound/a1ei/enrichment_information"
 )
 
+// ToDo - start return instead of text errors appropriate HTTP response codes..
+
 type A1EIController interface {
-	HandleEIJobCreate(ctx context.Context, eiJobID, eiJobTypeID string, params map[string]string, eiJobObject map[string]string) error
-	HandleEIJobDelete(ctx context.Context, eiTypeID, eiJobTypeID string) error
-	HandleEIJobUpdate(ctx context.Context, eiJobID, eiJobTypeID string, params map[string]string, eiJobObject map[string]string) error
-	HandleGetEIJobStatus(ctx context.Context, eiJobID, eiJobTypeID string) (bool, error)
-	HandleGetEIJobTypes(ctx context.Context) []string
-	HandleGetEIJobs(ctx context.Context, eiJobs map[string]string) ([]*a1eistore.Value, error)
-	HandleGetEIJob(ctx context.Context, eiJobID, eiJobTypeID string) (*a1eistore.Value, error)
+	HandleEIJobCreate(ctx context.Context, eiJobID string, eiJobObject A1apEnrichmentInformation.EiJobObject) (*a1eistore.Entry, error)
+	HandleEIJobDelete(ctx context.Context, eiTypeID string) error
+	//HandleEIJobUpdate(ctx context.Context, eiJobID, eiJobTypeID string, params map[string]string, eiJobObject map[string]string) error
+	HandleGetEIJobStatus(ctx context.Context, eiJobID string) (bool, error)
+	HandleGetEIJobTypes(ctx context.Context) ([]string, error)
+	HandleGetEIJobs(ctx context.Context, eiTypeID string) ([]*string, error)
+	HandleGetEIJob(ctx context.Context, eiJobID string) (*a1eistore.Value, error)
 }
 
 type a1eiController struct {
@@ -36,28 +39,31 @@ func NewA1EIController(subscriptionStore substore.Store, eijobsStore a1eistore.S
 	}
 }
 
-func (a1ei *a1eiController) HandleEIJobCreate(ctx context.Context, eiJobID, eiJobTypeID string, params map[string]string, eiJobObject map[string]string) error {
-	eiJobTypes := getSubscriptionEIJobTypes(ctx, a1ei)
+func (a1ei *a1eiController) HandleEIJobCreate(ctx context.Context, eiJobID string, eiJobObject A1apEnrichmentInformation.EiJobObject) (*a1eistore.Entry, error) {
+	eiJobTypes, err := getSubscriptionEIJobTypes(ctx, a1ei)
+	if err != nil {
+		return nil, err
+	}
 
-	if _, ok := eiJobTypes[eiJobTypeID]; !ok {
-		return fmt.Errorf("eiJobTypeID does not exist")
+	if _, ok := eiJobTypes[eiJobObject.EiTypeId]; !ok {
+		return nil, fmt.Errorf("eiJobTypeID does not exist")
 	}
 
 	ch := make(chan *substore.Entry)
-	err := substore.SubscriptionsByTypeID(ctx, a1ei.subscriptionStore, substore.EIJOB, eiJobID, ch)
+	err = substore.SubscriptionsByTypeID(ctx, a1ei.subscriptionStore, substore.EIJOB, eiJobID, ch)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	eiJobTargets := make(map[string]a1eistore.EIJobTarget)
-
 	eiJobStatus := true
 
 	for subEntry := range ch {
 		subValue := subEntry.Value.(substore.Value)
 		subAddress := subValue.Client.Address
 
-		eiJobStatusTarget := a1eisbi.CreateEIjob(ctx, subAddress, "", "", eiJobID, eiJobTypeID, eiJobObject)
+		//ToDo - eiJobObject should be of type EIJobObject as in onos-a1t/pkg/northbound/a1ap/enrichment_information/a1ap_ei.go
+		eiJobStatusTarget := a1eisbi.CreateEIjob(ctx, subAddress, "", "", eiJobID, eiJobObject.EiTypeId, eiJobObject.JobResultUri)
 		if eiJobStatusTarget != nil {
 			eiJobStatus = false
 		}
@@ -70,29 +76,31 @@ func (a1ei *a1eiController) HandleEIJobCreate(ctx context.Context, eiJobID, eiJo
 	}
 
 	key := a1eistore.Key{
-		EIJobID:   eiJobID,
-		EIJobtype: eiJobTypeID,
+		EIJobID: eiJobID,
 	}
 
 	value := a1eistore.Value{
-		NotificationDestination: params["notificationDestination"],
-		EIJobObject:             eiJobObject,
-		//EIJobStatusObjects:      eiJobStatus, // Should be Enabled or Disabled per specification
-		Targets:     eiJobTargets,
+		EIJobObject: eiJobObject,
+		//EIJobStatusObjects:      eiJobStatus, // ToDo - Should be Enabled or Disabled per specification
 		EIJobStatus: eiJobStatus,
+		EIJobtype:   eiJobObject.EiTypeId,
+		Targets:     eiJobTargets,
+	}
+	if eiJobObject.JobStatusNotificationUri != nil {
+		value.NotificationDestination = *eiJobObject.JobStatusNotificationUri
 	}
 
-	_, err = a1ei.eijobsStore.Put(ctx, key, value)
+	entry, err := a1ei.eijobsStore.Put(ctx, key, value)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	return nil
+	return entry, nil
 }
 
-func (a1ei *a1eiController) HandleEIJobDelete(ctx context.Context, eiJobID, eiJobTypeID string) error {
+func (a1ei *a1eiController) HandleEIJobDelete(ctx context.Context, eiJobID string) error {
 
-	a1eiEntry, err := a1eistore.GetEIjobByID(ctx, a1ei.eijobsStore, eiJobID, eiJobTypeID)
+	a1eiEntry, err := a1eistore.GetEIjobByID(ctx, a1ei.eijobsStore, eiJobID)
 	if err != nil {
 		return err
 	}
@@ -100,7 +108,8 @@ func (a1ei *a1eiController) HandleEIJobDelete(ctx context.Context, eiJobID, eiJo
 	a1eiValue := a1eiEntry.Value.(a1eistore.Value)
 
 	for _, targetValue := range a1eiValue.Targets {
-		err := a1eisbi.DeleteEIjob(ctx, targetValue.Address, "", "", eiJobID, eiJobTypeID)
+		//ToDo - eiJobObject should be of type EIJobObject as in onos-a1t/pkg/northbound/a1ap/enrichment_information/a1ap_ei.go
+		err := a1eisbi.DeleteEIjob(ctx, targetValue.Address, "", "", eiJobID, a1eiValue.EIJobtype, a1eiValue.EIJobObject.JobResultUri)
 		if err != nil {
 			log.Warn(err)
 		}
@@ -114,13 +123,13 @@ func (a1ei *a1eiController) HandleEIJobDelete(ctx context.Context, eiJobID, eiJo
 	return nil
 }
 
-// HandleEIJobUpdate should be the same routine as for HandleEIJobCreate
-func (a1ei *a1eiController) HandleEIJobUpdate(ctx context.Context, eiJobID, eiJobTypeID string, params map[string]string, eiJobObject map[string]string) error {
-	return a1ei.HandleEIJobCreate(ctx, eiJobID, eiJobTypeID, params, eiJobObject)
-}
+//// HandleEIJobUpdate should be the same routine as for HandleEIJobCreate
+//func (a1ei *a1eiController) HandleEIJobUpdate(ctx context.Context, eiJobID, eiJobTypeID string, params map[string]string, eiJobObject map[string]string) error {
+//	return a1ei.HandleEIJobCreate(ctx, eiJobID, eiJobTypeID, params, eiJobObject)
+//}
 
-func (a1ei *a1eiController) HandleGetEIJobStatus(ctx context.Context, eiJobID, eiJobTypeID string) (bool, error) {
-	a1eiEntry, err := a1eistore.GetEIjobByID(ctx, a1ei.eijobsStore, eiJobID, eiJobTypeID)
+func (a1ei *a1eiController) HandleGetEIJobStatus(ctx context.Context, eiJobID string) (bool, error) {
+	a1eiEntry, err := a1eistore.GetEIjobByID(ctx, a1ei.eijobsStore, eiJobID)
 	if err != nil {
 		return false, err
 	}
@@ -130,38 +139,47 @@ func (a1ei *a1eiController) HandleGetEIJobStatus(ctx context.Context, eiJobID, e
 	return a1eiEntryValueStatus, nil
 }
 
-func (a1ei *a1eiController) HandleGetEIJobTypes(ctx context.Context) []string {
+func (a1ei *a1eiController) HandleGetEIJobTypes(ctx context.Context) ([]string, error) {
 	eiJobTypes := []string{}
 
-	tmpSubs := getSubscriptionEIJobTypes(ctx, a1ei)
+	tmpSubs, err := getSubscriptionEIJobTypes(ctx, a1ei)
+	if err != nil {
+		return nil, err
+	}
 
 	for k := range tmpSubs {
 		eiJobTypes = append(eiJobTypes, k)
 	}
 	sort.Strings(eiJobTypes)
 
-	return eiJobTypes
+	return eiJobTypes, nil
 }
 
-// HandleGetEIJobs is expecting to get a map of strings, where Key is an EIJobID and a content is EIJobTypeID
-func (a1ei *a1eiController) HandleGetEIJobs(ctx context.Context, eiJobs map[string]string) ([]*a1eistore.Value, error) {
-	a1eiEntryValues := make([]*a1eistore.Value, 0)
+// ToDo - not confident in this piece of code, test it out..
+// HandleGetEIJobs returning an array of IDs which correspond to EiTypeID
+func (a1ei *a1eiController) HandleGetEIJobs(ctx context.Context, eiTypeID string) ([]*string, error) {
+	eiJobIDs := make([]*string, 0)
 
-	for eiJobID, eiJobTypeID := range eiJobs {
-		a1eiEntry, err := a1eistore.GetEIjobByID(ctx, a1ei.eijobsStore, eiJobID, eiJobTypeID)
-		if err != nil {
-			return nil, err
+	eiJobchEntries := make(chan *a1eistore.Entry)
+	done := make(chan bool)
+
+	go func(ch chan *a1eistore.Entry) {
+		for entry := range eiJobchEntries {
+			value, ok := entry.Value.(a1eistore.Value)
+			if ok {
+				if value.EIJobtype == eiTypeID {
+					eiJobIDs = append(eiJobIDs, &entry.Key.EIJobID)
+				}
+			}
 		}
-		a1eiEntryValue := a1eiEntry.Value.(a1eistore.Value)
+		done <- true
+	}(eiJobchEntries)
 
-		a1eiEntryValues = append(a1eiEntryValues, &a1eiEntryValue)
-	}
-
-	return a1eiEntryValues, nil
+	return eiJobIDs, nil
 }
 
-func (a1ei *a1eiController) HandleGetEIJob(ctx context.Context, eiJobID, eiJobTypeID string) (*a1eistore.Value, error) {
-	a1eiEntry, err := a1eistore.GetEIjobByID(ctx, a1ei.eijobsStore, eiJobID, eiJobTypeID)
+func (a1ei *a1eiController) HandleGetEIJob(ctx context.Context, eiJobID string) (*a1eistore.Value, error) {
+	a1eiEntry, err := a1eistore.GetEIjobByID(ctx, a1ei.eijobsStore, eiJobID)
 	if err != nil {
 		return nil, err
 	}
@@ -170,14 +188,14 @@ func (a1ei *a1eiController) HandleGetEIJob(ctx context.Context, eiJobID, eiJobTy
 	return &a1eiEntryValue, nil
 }
 
-func getSubscriptionEIJobTypes(ctx context.Context, a1ei *a1eiController) map[string]struct{} {
+func getSubscriptionEIJobTypes(ctx context.Context, a1ei *a1eiController) (map[string]struct{}, error) {
 	var exists = struct{}{}
 	tmpSubs := make(map[string]struct{})
 	ch := make(chan *substore.Entry)
 
 	err := substore.SubscriptionsByType(ctx, a1ei.subscriptionStore, substore.EIJOB, ch)
 	if err != nil {
-		return tmpSubs
+		return nil, err
 	}
 
 	for subEntry := range ch {
@@ -189,5 +207,5 @@ func getSubscriptionEIJobTypes(ctx context.Context, a1ei *a1eiController) map[st
 		}
 	}
 
-	return tmpSubs
+	return tmpSubs, nil
 }

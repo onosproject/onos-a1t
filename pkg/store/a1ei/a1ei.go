@@ -7,6 +7,7 @@ package a1ei
 import (
 	"context"
 	"fmt"
+	a1ei "github.com/onosproject/onos-a1t/pkg/northbound/a1ap/enrichment_information"
 	"sync"
 
 	"github.com/google/uuid"
@@ -36,17 +37,19 @@ type EIJobTarget struct {
 	EIJobStatusObject map[string]string
 }
 
+//ToDo - do we have to add owner here in order to correspond to definition on line 79
+// in onos-a1t/pkg/northbound/a1ap/enrichment_information/a1ap_ei.go ??
 type Value struct {
 	NotificationDestination string
-	EIJobObject             map[string]string
-	EIJobStatusObjects      map[string]string
-	Targets                 map[string]EIJobTarget
-	EIJobStatus             bool
+	EIJobObject             a1ei.EiJobObject
+	//EIJobStatusObjects      map[string]string
+	EIJobStatus bool
+	EIJobtype   string
+	Targets     map[string]EIJobTarget
 }
 
 type Key struct {
-	EIJobID   string
-	EIJobtype string
+	EIJobID string
 }
 
 type Entry struct {
