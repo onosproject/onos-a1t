@@ -6,9 +6,9 @@ package handler
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/labstack/echo/v4"
 	"github.com/onosproject/onos-a1t/pkg/controller"
 	a1ei "github.com/onosproject/onos-a1t/pkg/northbound/a1ap/enrichment_information"
 	"io"
@@ -30,7 +30,7 @@ func NewA1eiWraper(version string, a1eiController controller.A1EIController) a1e
 
 // ToDo - handle jobIDs by owner as well
 // GetEiJobIdsUsingGET request
-func (a1eiw *a1eiWraper) GetEiJobIdsUsingGET(ctx echo.Context, params a1ei.GetEiJobIdsUsingGETParams, reqEditors ...a1ei.RequestEditorFn) (*http.Response, error) {
+func (a1eiw *a1eiWraper) GetEiJobIdsUsingGET(ctx context.Context, params *a1ei.GetEiJobIdsUsingGETParams, reqEditors ...a1ei.RequestEditorFn) (*http.Response, error) {
 
 	// no idea for what reqEditor could be used for..
 	//for _, item := range reqEditors {
@@ -45,7 +45,7 @@ func (a1eiw *a1eiWraper) GetEiJobIdsUsingGET(ctx echo.Context, params a1ei.GetEi
 		}, fmt.Errorf("GetEiJobIdsUsingGET() EItypeID must be defined")
 	}
 
-	eiJobIDs, err := a1eiw.a1eiController.HandleGetEIJobs(ctx.Request().Context(), *params.EiTypeId)
+	eiJobIDs, err := a1eiw.a1eiController.HandleGetEIJobs(ctx, *params.EiTypeId)
 	if err != nil {
 		//ToDo - ProblemDetails should be included
 		return &http.Response{
@@ -66,14 +66,14 @@ func (a1eiw *a1eiWraper) GetEiJobIdsUsingGET(ctx echo.Context, params a1ei.GetEi
 }
 
 // DeleteIndividualEiJobUsingDELETE request
-func (a1eiw *a1eiWraper) DeleteIndividualEiJobUsingDELETE(ctx echo.Context, eiJobID string, reqEditors ...a1ei.RequestEditorFn) (*http.Response, error) {
+func (a1eiw *a1eiWraper) DeleteIndividualEiJobUsingDELETE(ctx context.Context, eiJobID string, reqEditors ...a1ei.RequestEditorFn) (*http.Response, error) {
 
 	// no idea for what reqEditor could be used for..
 	//for _, item := range reqEditors {
 	//	//item
 	//}
 
-	err := a1eiw.a1eiController.HandleEIJobDelete(ctx.Request().Context(), eiJobID)
+	err := a1eiw.a1eiController.HandleEIJobDelete(ctx, eiJobID)
 	if err != nil {
 		return &http.Response{
 			Status:     "404 Enrichment Information job is not found",
@@ -95,14 +95,14 @@ func (a1eiw *a1eiWraper) DeleteIndividualEiJobUsingDELETE(ctx echo.Context, eiJo
 }
 
 // GetIndividualEiJobUsingGET request
-func (a1eiw *a1eiWraper) GetIndividualEiJobUsingGET(ctx echo.Context, eiJobID string, reqEditors ...a1ei.RequestEditorFn) (*http.Response, error) {
+func (a1eiw *a1eiWraper) GetIndividualEiJobUsingGET(ctx context.Context, eiJobID string, reqEditors ...a1ei.RequestEditorFn) (*http.Response, error) {
 
 	// no idea for what reqEditor could be used for..
 	//for _, item := range reqEditors {
 	//	//item
 	//}
 
-	resp, err := a1eiw.a1eiController.HandleGetEIJob(ctx.Request().Context(), eiJobID)
+	resp, err := a1eiw.a1eiController.HandleGetEIJob(ctx, eiJobID)
 	if err != nil {
 		return &http.Response{
 			Status:     "404 Enrichment Information job is not found",
@@ -124,7 +124,7 @@ func (a1eiw *a1eiWraper) GetIndividualEiJobUsingGET(ctx echo.Context, eiJobID st
 }
 
 // PutIndividualEiJobUsingPUT request with any body
-func (a1eiw *a1eiWraper) PutIndividualEiJobUsingPUTWithBody(ctx echo.Context, eiJobID string, contentType string, body io.Reader, reqEditors ...a1ei.RequestEditorFn) (*http.Response, error) {
+func (a1eiw *a1eiWraper) PutIndividualEiJobUsingPUTWithBody(ctx context.Context, eiJobID string, contentType string, body io.Reader, reqEditors ...a1ei.RequestEditorFn) (*http.Response, error) {
 
 	// no idea for what reqEditor could be used for..
 	//for _, item := range reqEditors {
@@ -133,7 +133,7 @@ func (a1eiw *a1eiWraper) PutIndividualEiJobUsingPUTWithBody(ctx echo.Context, ei
 	//body.Read()
 
 	// ToDo - how to deal with body defined through io.Reader??
-	//a1eiEntryValue, err := a1eiw.a1eiController.HandleEIJobCreate(ctx.Request().Context(), eiJobId, a1ei.EiJobObject(body))
+	//a1eiEntryValue, err := a1eiw.a1eiController.HandleEIJobCreate(ctx, eiJobId, a1ei.EiJobObject(body))
 	//if err != nil {
 	//	return ctx.JSON(http.StatusNotFound, err)
 	//}
@@ -143,14 +143,14 @@ func (a1eiw *a1eiWraper) PutIndividualEiJobUsingPUTWithBody(ctx echo.Context, ei
 }
 
 // ToDo - handle EI Job update
-func (a1eiw *a1eiWraper) PutIndividualEiJobUsingPUT(ctx echo.Context, eiJobID string, body a1ei.PutIndividualEiJobUsingPUTJSONRequestBody, reqEditors ...a1ei.RequestEditorFn) (*http.Response, error) {
+func (a1eiw *a1eiWraper) PutIndividualEiJobUsingPUT(ctx context.Context, eiJobID string, body a1ei.PutIndividualEiJobUsingPUTJSONRequestBody, reqEditors ...a1ei.RequestEditorFn) (*http.Response, error) {
 
 	// no idea for what reqEditor could be used for..
 	//for _, item := range reqEditors {
 	//	//item
 	//}
 
-	a1eiEntryValue, err := a1eiw.a1eiController.HandleEIJobCreate(ctx.Request().Context(), eiJobID, a1ei.EiJobObject(body))
+	a1eiEntryValue, err := a1eiw.a1eiController.HandleEIJobCreate(ctx, eiJobID, a1ei.EiJobObject(body))
 	if err != nil {
 		return &http.Response{
 			Status:     "404 Enrichment Information type is not found",
@@ -172,14 +172,14 @@ func (a1eiw *a1eiWraper) PutIndividualEiJobUsingPUT(ctx echo.Context, eiJobID st
 }
 
 // GetEiJobStatusUsingGET request
-func (a1eiw *a1eiWraper) GetEiJobStatusUsingGET(ctx echo.Context, eiJobID string, reqEditors ...a1ei.RequestEditorFn) (*http.Response, error) {
+func (a1eiw *a1eiWraper) GetEiJobStatusUsingGET(ctx context.Context, eiJobID string, reqEditors ...a1ei.RequestEditorFn) (*http.Response, error) {
 
 	// no idea for what reqEditor could be used for..
 	//for _, item := range reqEditors {
 	//	//item
 	//}
 
-	status, err := a1eiw.a1eiController.HandleGetEIJobStatus(ctx.Request().Context(), eiJobID)
+	status, err := a1eiw.a1eiController.HandleGetEIJobStatus(ctx, eiJobID)
 	if err != nil {
 		return &http.Response{
 			Status:     "404 Enrichment Information job is not found",
@@ -201,14 +201,14 @@ func (a1eiw *a1eiWraper) GetEiJobStatusUsingGET(ctx echo.Context, eiJobID string
 }
 
 // GetEiTypeIdentifiersUsingGET request
-func (a1eiw *a1eiWraper) GetEiTypeIdentifiersUsingGET(ctx echo.Context, reqEditors ...a1ei.RequestEditorFn) (*http.Response, error) {
+func (a1eiw *a1eiWraper) GetEiTypeIdentifiersUsingGET(ctx context.Context, reqEditors ...a1ei.RequestEditorFn) (*http.Response, error) {
 
 	// no idea for what reqEditor could be used for..
 	//for _, item := range reqEditors {
 	//	//item
 	//}
 
-	eiTypeIDs, err := a1eiw.a1eiController.HandleGetEIJobTypes(ctx.Request().Context())
+	eiTypeIDs, err := a1eiw.a1eiController.HandleGetEIJobTypes(ctx)
 	if err != nil {
 		return &http.Response{
 			Status:     "404 Not Found",
@@ -230,14 +230,14 @@ func (a1eiw *a1eiWraper) GetEiTypeIdentifiersUsingGET(ctx echo.Context, reqEdito
 }
 
 // GetEiTypeUsingGET request
-func (a1eiw *a1eiWraper) GetEiTypeUsingGET(ctx echo.Context, eiTypeId string, reqEditors ...a1ei.RequestEditorFn) (*http.Response, error) {
+func (a1eiw *a1eiWraper) GetEiTypeUsingGET(ctx context.Context, eiTypeId string, reqEditors ...a1ei.RequestEditorFn) (*http.Response, error) {
 
 	// no idea for what reqEditor could be used for..
 	//for _, item := range reqEditors {
 	//	//item
 	//}
 
-	eiJobIDs, err := a1eiw.a1eiController.HandleGetEIJobs(ctx.Request().Context(), eiTypeId)
+	eiJobIDs, err := a1eiw.a1eiController.HandleGetEIJobs(ctx, eiTypeId)
 	if err != nil {
 		return &http.Response{
 			Status:     "404 Not Found",
