@@ -7,6 +7,7 @@ package a1ei
 import (
 	"context"
 	"fmt"
+	a1ei "github.com/onosproject/onos-a1t/pkg/northbound/a1ap/enrichment_information"
 	"sync"
 
 	"github.com/google/uuid"
@@ -31,16 +32,24 @@ type Store interface {
 	Watch(ctx context.Context, ch chan<- store.Event) error
 }
 
+type EIJobTarget struct {
+	Address           string
+	EIJobStatusObject map[string]string
+}
+
+//ToDo - do we have to add owner here in order to correspond to definition on line 79
+// in onos-a1t/pkg/northbound/a1ap/enrichment_information/a1ap_ei.go ??
 type Value struct {
 	NotificationDestination string
-	EIJobObject             map[string]interface{}
-	EIJobStatusObjects      map[string]interface{}
-	Targets                 map[string]interface{}
+	EIJobObject             a1ei.EiJobObject
+	//EIJobStatusObjects      map[string]string
+	EIJobStatus bool
+	EIJobtype   string
+	Targets     map[string]EIJobTarget
 }
 
 type Key struct {
-	EIJobID   string
-	EIJobtype string
+	EIJobID string
 }
 
 type Entry struct {
