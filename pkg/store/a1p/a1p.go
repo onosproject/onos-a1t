@@ -43,7 +43,7 @@ type Key struct {
 
 type Value struct {
 	NotificationDestination string
-	PolicyObject            map[string]string
+	PolicyObject            map[string]interface{}
 	PolicyStatusObjects     map[string]string
 	Targets                 map[string]PolicyTarget
 	PolicyStatus            bool

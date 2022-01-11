@@ -6,6 +6,7 @@ package cli
 
 import (
 	"context"
+	"encoding/json"
 
 	a1eistore "github.com/onosproject/onos-a1t/pkg/store/a1ei"
 	a1pstore "github.com/onosproject/onos-a1t/pkg/store/a1p"
@@ -55,6 +56,40 @@ type Server struct {
 func (s *Server) Get(ctx context.Context, request *a1tapi.GetRequest) (*a1tapi.GetResponse, error) {
 
 	response := &a1tapi.GetResponse{}
+
+	switch request.Object.GetType() {
+	case a1tapi.Object_POLICY:
+
+		policyObj := request.Object.GetPolicy()
+
+		a1pEntry, err := a1pstore.GetPolicyByID(ctx, s.policiesStore, policyObj.Id, policyObj.Typeid)
+		if err != nil {
+			return response, err
+		}
+
+		a1pEntryValue := a1pEntry.Value.(a1pstore.Value)
+
+		policyObjectValue, err := json.Marshal(a1pEntryValue.PolicyObject)
+		if err != nil {
+			return response, err
+		}
+
+		response := &a1tapi.GetResponse{
+			Object: &a1tapi.Object{
+				Type: a1tapi.Object_POLICY,
+				Obj: &a1tapi.Object_Policy{
+					Policy: &a1tapi.Policy{
+						Id:     policyObj.Id,
+						Typeid: policyObj.Typeid,
+						Object: policyObjectValue,
+					},
+				},
+			},
+		}
+		return response, nil
+
+	case a1tapi.Object_EIJOB:
+	}
 
 	return response, nil
 }

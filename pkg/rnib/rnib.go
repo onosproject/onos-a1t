@@ -7,6 +7,7 @@ package rnib
 import (
 	"context"
 	"crypto/md5"
+
 	gogotypes "github.com/gogo/protobuf/types"
 	uuid2 "github.com/google/uuid"
 	"github.com/onosproject/onos-lib-go/pkg/env"
@@ -25,6 +26,9 @@ type TopoClient interface {
 	GetXappAspects(ctx context.Context, nodeID topoapi.ID) (*topoapi.XAppInfo, error)
 	UpdateXappAspects(ctx context.Context, xappID topoapi.ID) error
 	AddA1TEntity(ctx context.Context, nbPort uint32) error
+	AddA1TXappRelation(ctx context.Context, xappID topoapi.ID) error
+	GetA1TTopoID() topoapi.ID
+	GetXappRelationTopoID(xappID topoapi.ID) topoapi.ID
 }
 
 // NewClient creates a new topo SDK client

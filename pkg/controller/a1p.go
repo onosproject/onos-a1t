@@ -20,7 +20,7 @@ import (
 var log = logging.GetLogger("controller", "a1p")
 
 type A1PController interface {
-	HandlePolicyCreate(ctx context.Context, policyID, policyTypeID string, params map[string]string, policyObject map[string]string) error
+	HandlePolicyCreate(ctx context.Context, policyID, policyTypeID string, params map[string]string, policyObject map[string]interface{}) error
 	HandlePolicyDelete(ctx context.Context, policyID, policyTypeID string) error
 	HandlePolicyUpdate() error
 	HandleGetPolicyTypes(ctx context.Context) []string
@@ -100,7 +100,7 @@ func (a1p *a1pController) HandleGetPolicyStatus(ctx context.Context, policyID, p
 	return a1pEntryValueStatus, nil
 }
 
-func (a1p *a1pController) HandlePolicyCreate(ctx context.Context, policyID, policyTypeID string, params map[string]string, policyObject map[string]string) error {
+func (a1p *a1pController) HandlePolicyCreate(ctx context.Context, policyID, policyTypeID string, params map[string]string, policyObject map[string]interface{}) error {
 	policyTypes := getSubscriptionPolicyTypes(ctx, a1p)
 
 	if _, ok := policyTypes[policyTypeID]; !ok {

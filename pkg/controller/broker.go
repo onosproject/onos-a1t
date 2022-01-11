@@ -15,10 +15,10 @@ type Broker interface {
 	A1EIController() A1EIController
 }
 
-func NewBroker(subscriptionStore substore.Store, policiesStore a1pstore.Store, eijobsStore a1eistore.Store) Broker {
+func NewBroker(nonRTRICURL string, subscriptionStore substore.Store, policiesStore a1pstore.Store, eijobsStore a1eistore.Store) Broker {
 	return &broker{
 		a1pController:  NewA1PController(subscriptionStore, policiesStore),
-		a1eiController: NewA1EIController(subscriptionStore, eijobsStore),
+		a1eiController: NewA1EIController(nonRTRICURL, subscriptionStore, eijobsStore),
 	}
 }
 

@@ -7,14 +7,79 @@ package controller
 import (
 	"context"
 	"fmt"
-	A1apEnrichmentInformation "github.com/onosproject/onos-a1t/pkg/northbound/a1ap/enrichment_information"
-	a1eisbi "github.com/onosproject/onos-a1t/pkg/southbound/a1ei"
+
+	a1einbi "github.com/onosproject/onos-a1t/pkg/northbound/a1ap/enrichment_information"
 	a1eistore "github.com/onosproject/onos-a1t/pkg/store/a1ei"
 	substore "github.com/onosproject/onos-a1t/pkg/store/subscription"
-	"sort"
-	// a1einbi "github.com/onosproject/onos-a1t/pkg/northbound/a1ei/enrichment_information"
 )
 
+type A1EIController interface {
+	HandleGetEIJobTypes(ctx context.Context) (*[]string, error)
+	HandleEIJobCreate(ctx context.Context, eiTypeID, eiJobID string) error
+	HandleEIJobDelete(ctx context.Context, eiJobID string) error
+	HandleEIJobNotify(ctx context.Context, eiJobID string, eiJobObject map[string]interface{}) error
+	HandleGetEIJobStatus(ctx context.Context, eiJobID string) (string, error)
+}
+
+type a1eiController struct {
+	nonRTRICURL       string
+	eijobsStore       a1eistore.Store
+	subscriptionStore substore.Store
+	nbiClient         a1einbi.ClientWithResponsesInterface
+}
+
+func NewA1EIController(nonRTRICURL string, subscriptionStore substore.Store, eijobsStore a1eistore.Store) A1EIController {
+	nbiClient, err := a1einbi.NewClientWithResponses(nonRTRICURL)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	return &a1eiController{
+		nonRTRICURL:       nonRTRICURL,
+		eijobsStore:       eijobsStore,
+		subscriptionStore: subscriptionStore,
+		nbiClient:         nbiClient,
+	}
+}
+
+func (a1ei *a1eiController) HandleGetEIJobTypes(ctx context.Context) (*[]string, error) {
+	resp, err := a1ei.nbiClient.GetEiTypeIdentifiersUsingGETWithResponse(ctx)
+	if err != nil {
+		return &[]string{}, err
+	}
+
+	return resp.JSON200, nil
+}
+
+func (a1ei *a1eiController) HandleEIJobCreate(ctx context.Context, eiTypeID, eiJobID string) error {
+	eiJobObj := a1einbi.EiJobObject{
+		EiTypeId: eiTypeID,
+	}
+	eiJobObjPUT := a1einbi.PutIndividualEiJobUsingPUTJSONRequestBody(a1einbi.PutIndividualEiJobUsingPUTJSONBody(eiJobObj))
+
+	resp, err := a1ei.nbiClient.PutIndividualEiJobUsingPUTWithResponse(ctx, eiJobID, eiJobObjPUT)
+	if err != nil {
+		return err
+	}
+
+	if resp.JSON404 != nil {
+		return fmt.Errorf("%d", resp.JSON404.Status)
+
+	}
+	return nil
+}
+func (a1ei *a1eiController) HandleEIJobDelete(ctx context.Context, eiJobID string) error {
+	return nil
+}
+func (a1ei *a1eiController) HandleEIJobNotify(ctx context.Context, eiJobID string, eiJobObject map[string]interface{}) error {
+	//TODO: For all xApps waiting for eiJob Notification send EIJobStatusNotify
+	return nil
+}
+func (a1ei *a1eiController) HandleGetEIJobStatus(ctx context.Context, eiJobID string) (string, error) {
+	return "", nil
+}
+
+/*
 // ToDo - start return instead of text errors appropriate HTTP response codes..
 
 type A1EIController interface {
@@ -25,18 +90,6 @@ type A1EIController interface {
 	HandleGetEIJobTypes(ctx context.Context) ([]string, error)
 	HandleGetEIJobs(ctx context.Context, eiTypeID string) ([]*string, error)
 	HandleGetEIJob(ctx context.Context, eiJobID string) (*a1eistore.Value, error)
-}
-
-type a1eiController struct {
-	eijobsStore       a1eistore.Store
-	subscriptionStore substore.Store
-}
-
-func NewA1EIController(subscriptionStore substore.Store, eijobsStore a1eistore.Store) A1EIController {
-	return &a1eiController{
-		eijobsStore:       eijobsStore,
-		subscriptionStore: subscriptionStore,
-	}
 }
 
 func (a1ei *a1eiController) HandleEIJobCreate(ctx context.Context, eiJobID string, eiJobObject A1apEnrichmentInformation.EiJobObject) (*a1eistore.Entry, error) {
@@ -209,3 +262,4 @@ func getSubscriptionEIJobTypes(ctx context.Context, a1ei *a1eiController) (map[s
 
 	return tmpSubs, nil
 }
+*/
