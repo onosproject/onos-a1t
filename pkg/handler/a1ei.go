@@ -5,15 +5,13 @@
 package handler
 
 import (
-	"bytes"
-	"context"
-	"encoding/json"
 	"fmt"
+	"net/http"
+
+	"github.com/deepmap/oapi-codegen/pkg/runtime"
+	"github.com/labstack/echo/v4"
 	"github.com/onosproject/onos-a1t/pkg/controller"
 	a1ei "github.com/onosproject/onos-a1t/pkg/northbound/a1ap/enrichment_information"
-	"io"
-	"io/ioutil"
-	"net/http"
 )
 
 type a1eiWraper struct {
@@ -21,14 +19,75 @@ type a1eiWraper struct {
 	a1eiController controller.A1EIController
 }
 
-func NewA1eiWraper(version string, a1eiController controller.A1EIController) a1ei.ClientInterface {
-	return &a1eiWraper{
+func SetRESTA1EIWraper(e *echo.Echo, version string, a1eiController controller.A1EIController) {
+	wraper := &a1eiWraper{
 		version:        version,
 		a1eiController: a1eiController,
 	}
+
+	RegisterEIJobHandlers(version, e, wraper)
 }
 
-// ToDo - handle jobIDs by owner as well
+type EIServerInterface interface {
+	// Individual EI job
+	// (POST /A1-EI/v1/eijobs/{eiJobId})
+	PostIndividualEiJobUsingPOST(ctx echo.Context, eiJobId string) error
+}
+
+// ServerInterfaceWrapper converts echo contexts to parameters.
+type ServerInterfaceWrapper struct {
+	Handler EIServerInterface
+}
+
+// PostIndividualEiJobUsingPOST converts echo context to params.
+func (w *ServerInterfaceWrapper) PostIndividualEiJobUsingPOST(ctx echo.Context) error {
+	var err error
+	// ------------- Path parameter "eiJobId" -------------
+	var eiJobId string
+
+	err = runtime.BindStyledParameterWithLocation("simple", false, "eiJobId", runtime.ParamLocationPath, ctx.Param("eiJobId"), &eiJobId)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter eiJobId: %s", err))
+	}
+
+	// Invoke the callback with all the unmarshalled arguments
+	err = w.Handler.PostIndividualEiJobUsingPOST(ctx, eiJobId)
+	return err
+}
+
+// RegisterHandlers adds each server route to the EchoRouter.
+func RegisterEIJobHandlers(version string, router a1ei.EchoRouter, si EIServerInterface) {
+	registerHandlersWithBaseURL(version, router, si, "")
+}
+
+// Registers handlers, and prepends BaseURL to the paths, so that the paths
+// can be served under a prefix.
+func registerHandlersWithBaseURL(version string, router a1ei.EchoRouter, si EIServerInterface, baseURL string) {
+
+	wrapper := ServerInterfaceWrapper{
+		Handler: si,
+	}
+
+	router.POST(baseURL+"/A1-EI/"+version+"/eijobs/:eiJobId/notify", wrapper.PostIndividualEiJobUsingPOST)
+}
+
+func (a1eiw *a1eiWraper) PostIndividualEiJobUsingPOST(ctx echo.Context, eiJobId string) error {
+
+	eiJobObjNot := make(map[string]interface{})
+
+	if err := ctx.Bind(&eiJobObjNot); err != nil {
+		return ctx.JSON(http.StatusOK, err)
+	}
+
+	err := a1eiw.a1eiController.HandleEIJobNotify(ctx.Request().Context(), eiJobId, eiJobObjNot)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+/* // ToDo - handle jobIDs by owner as well
 // GetEiJobIdsUsingGET request
 func (a1eiw *a1eiWraper) GetEiJobIdsUsingGET(ctx context.Context, params *a1ei.GetEiJobIdsUsingGETParams, reqEditors ...a1ei.RequestEditorFn) (*http.Response, error) {
 
@@ -257,3 +316,4 @@ func (a1eiw *a1eiWraper) GetEiTypeUsingGET(ctx context.Context, eiTypeId string,
 		Body:       ioutil.NopCloser(bytes.NewBuffer(responseBody)),
 	}, nil
 }
+*/

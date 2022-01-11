@@ -52,11 +52,8 @@ type Client struct {
 }
 
 type Subscription struct {
-	Type        string //oneof const POLICY or EIJOB Type
-	TypeID      string
-	Name        string
-	Version     string
-	Description string
+	Type   string //oneof const POLICY or EIJOB Type
+	TypeID string
 }
 
 type Key struct {

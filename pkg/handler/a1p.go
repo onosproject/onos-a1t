@@ -18,11 +18,12 @@ type a1pWraper struct {
 	a1pController controller.A1PController
 }
 
-func NewA1pWraper(version string, a1pController controller.A1PController) a1p.ServerInterface {
-	return &a1pWraper{
+func SetRESTA1PWraper(e *echo.Echo, version string, a1pController controller.A1PController) {
+	wraper := &a1pWraper{
 		version:       version,
 		a1pController: a1pController,
 	}
+	a1p.RegisterHandlers(e, wraper)
 }
 
 // (GET /policytypes)
@@ -67,7 +68,7 @@ func (a1pw *a1pWraper) GetPolicytypesPolicyTypeIdPoliciesPolicyId(ctx echo.Conte
 
 // (PUT /policytypes/{policyTypeId}/policies/{policyId})
 func (a1pw *a1pWraper) PutPolicytypesPolicyTypeIdPoliciesPolicyId(ctx echo.Context, policyTypeId a1p.PolicyTypeId, policyId a1p.PolicyId, params a1p.PutPolicytypesPolicyTypeIdPoliciesPolicyIdParams) error {
-	policyObject := make(map[string]string)
+	policyObject := make(map[string]interface{})
 	paramsMap := make(map[string]string)
 	paramsMap["notificationDestination"] = string(*params.NotificationDestination)
 
@@ -76,7 +77,11 @@ func (a1pw *a1pWraper) PutPolicytypesPolicyTypeIdPoliciesPolicyId(ctx echo.Conte
 	}
 
 	err := a1pw.a1pController.HandlePolicyCreate(ctx.Request().Context(), string(policyTypeId), string(policyId), paramsMap, policyObject)
-	return ctx.JSON(http.StatusOK, err)
+	if err != nil {
+		return ctx.JSON(http.StatusBadRequest, err)
+	}
+
+	return ctx.JSON(http.StatusCreated, nil)
 }
 
 // (GET /policytypes/{policyTypeId}/policies/{policyId}/status)

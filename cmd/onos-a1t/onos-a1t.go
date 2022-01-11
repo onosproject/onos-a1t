@@ -21,6 +21,7 @@ func main() {
 	configPath := flag.String("configPath", "/etc/onos/config/config.json", "path to config.json file")
 	grpcPort := flag.Int("grpcPort", 5150, "grpc Port number")
 	baseURL := flag.String("baseURL", "0.0.0.0:9639", "base URL for NBI A1T restfull server")
+	nonRTRICURL := flag.String("nonRTRICURL", "127.0.0.1:9640", "base URL of A1 in Non-RT RIC")
 
 	ready := make(chan bool)
 
@@ -32,12 +33,13 @@ func main() {
 	}
 
 	cfg := manager.Config{
-		CAPath:     *caPath,
-		KeyPath:    *keyPath,
-		CertPath:   *certPath,
-		GRPCPort:   *grpcPort,
-		ConfigPath: *configPath,
-		BaseURL:    *baseURL,
+		CAPath:      *caPath,
+		KeyPath:     *keyPath,
+		CertPath:    *certPath,
+		GRPCPort:    *grpcPort,
+		ConfigPath:  *configPath,
+		BaseURL:     *baseURL,
+		NonRTRICURL: *nonRTRICURL,
 	}
 
 	log.Info("Starting onos-a1t")

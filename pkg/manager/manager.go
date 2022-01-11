@@ -6,13 +6,14 @@ package manager
 
 import (
 	"context"
+	"strconv"
+	"strings"
+
 	"github.com/onosproject/onos-a1t/pkg/controller"
 	nbi "github.com/onosproject/onos-a1t/pkg/northbound/cli"
 	nbirest "github.com/onosproject/onos-a1t/pkg/northbound/rest"
 	"github.com/onosproject/onos-a1t/pkg/rnib"
 	subs "github.com/onosproject/onos-a1t/pkg/subscription"
-	"strconv"
-	"strings"
 
 	a1eistore "github.com/onosproject/onos-a1t/pkg/store/a1ei"
 	a1pstore "github.com/onosproject/onos-a1t/pkg/store/a1p"
@@ -25,12 +26,13 @@ import (
 var log = logging.GetLogger("manager")
 
 type Config struct {
-	CAPath     string
-	KeyPath    string
-	CertPath   string
-	GRPCPort   int
-	ConfigPath string
-	BaseURL    string
+	CAPath      string
+	KeyPath     string
+	CertPath    string
+	GRPCPort    int
+	ConfigPath  string
+	BaseURL     string
+	NonRTRICURL string
 }
 
 type Manager struct {
@@ -50,7 +52,7 @@ func NewManager(config Config) (*Manager, error) {
 	policyStore := a1pstore.NewStore()
 	eijobsStore := a1eistore.NewStore()
 
-	broker := controller.NewBroker(subscriptionStore, policyStore, eijobsStore)
+	broker := controller.NewBroker(config.NonRTRICURL, subscriptionStore, policyStore, eijobsStore)
 
 	subManager, err := subs.NewSubscriptionManager(broker, subscriptionStore)
 	if err != nil {

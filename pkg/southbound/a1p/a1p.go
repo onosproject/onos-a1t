@@ -6,48 +6,41 @@ package southbound
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 
-	prototypes "github.com/gogo/protobuf/types"
-
 	a1tsb "github.com/onosproject/onos-a1t/pkg/southbound"
-	a1tapi "github.com/onosproject/onos-a1t/pkg/southbound/a1t"
+	a1tapi "github.com/onosproject/onos-api/go/onos/a1t/a1"
 )
 
-func CreatePolicy(ctx context.Context, address, certPath, keyPath string, policyID, policyTypeID string, policyObject map[string]string) error {
+func CreatePolicy(ctx context.Context, address, certPath, keyPath string, policyID, policyTypeID string, policyObject map[string]interface{}) error {
 	conn, err := a1tsb.GetConnection(ctx, address, certPath, keyPath)
 	if err != nil {
 		return err
 	}
 	defer conn.Close()
 
-	var policyObjectValue *prototypes.Any
-	objValue := &a1tapi.ObjectValue{Value: policyObject}
-	policyObjectValue, err = prototypes.MarshalAny(objValue)
+	policyObjectValue, err := json.Marshal(policyObject)
 	if err != nil {
 		return err
 	}
 
-	request := a1tapi.CreateRequest{
-		Object: &a1tapi.Object{
-			Type: a1tapi.Object_POLICY,
-			Obj: &a1tapi.Object_Policy{
-				Policy: &a1tapi.Policy{
-					Id:     policyID,
-					Typeid: policyTypeID,
-					Object: policyObjectValue,
-				},
-			},
+	request := a1tapi.PolicyRequestMessage{
+		PolicyType: &a1tapi.PolicyType{
+			Id: policyTypeID,
+		},
+		Message: &a1tapi.RequestMessage{
+			Payload: policyObjectValue,
 		},
 	}
-	client := a1tapi.NewA1TClient(conn)
+	client := a1tapi.NewPolicyServiceClient(conn)
 
-	respCreate, err := client.Create(context.Background(), &request)
+	respCreate, err := client.PolicySetup(context.Background(), &request)
 	if err != nil {
 		return err
 	}
 
-	if respCreate.GetObject().Id != "" {
+	if respCreate.String() == "" {
 		return fmt.Errorf("policy object create failed")
 	}
 
@@ -61,25 +54,20 @@ func DeletePolicy(ctx context.Context, address, certPath, keyPath string, policy
 	}
 	defer conn.Close()
 
-	request := a1tapi.DeleteRequest{
-		Object: &a1tapi.Object{
-			Type: a1tapi.Object_POLICY,
-			Obj: &a1tapi.Object_Policy{
-				Policy: &a1tapi.Policy{
-					Id:     policyID,
-					Typeid: policyTypeID,
-				},
-			},
+	request := a1tapi.PolicyRequestMessage{
+		PolicyType: &a1tapi.PolicyType{
+			Id: policyTypeID,
 		},
 	}
-	client := a1tapi.NewA1TClient(conn)
 
-	respCreate, err := client.Delete(context.Background(), &request)
+	client := a1tapi.NewPolicyServiceClient(conn)
+
+	respCreate, err := client.PolicyDelete(context.Background(), &request)
 	if err != nil {
 		return err
 	}
 
-	if respCreate.GetObject().Id != "" {
+	if respCreate.String() == "" {
 		return fmt.Errorf("policy object delete failed")
 	}
 

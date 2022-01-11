@@ -28,7 +28,7 @@ func CreateEIjob(ctx context.Context, address, certPath, keyPath string, eiJobID
 				Eijob: &a1tapi.EIJob{
 					Id:     eiJobID,
 					Typeid: eiJobTypeID,
-					Object: eiJobObject,
+					Object: []byte(eiJobObject),
 					//ToDo - add in status in the future
 					//Status: &a1tapi.Status{}
 				},
@@ -42,7 +42,7 @@ func CreateEIjob(ctx context.Context, address, certPath, keyPath string, eiJobID
 		return err
 	}
 
-	if respCreate.GetObject().Id != "" {
+	if respCreate.GetObject().String() == "" {
 		return fmt.Errorf("EI Job object create failed")
 	}
 
@@ -65,7 +65,7 @@ func DeleteEIjob(ctx context.Context, address, certPath, keyPath string, eiJobID
 				Eijob: &a1tapi.EIJob{
 					Id:     eiJobID,
 					Typeid: eiJobTypeID,
-					Object: eiJobObject,
+					Object: []byte(eiJobObject),
 					//ToDo - add in status in the future
 					//Status: &a1tapi.Status{}
 				},
@@ -79,7 +79,7 @@ func DeleteEIjob(ctx context.Context, address, certPath, keyPath string, eiJobID
 		return err
 	}
 
-	if respCreate.GetObject().Id != "" {
+	if respCreate.GetObject().String() == "" {
 		return fmt.Errorf("EI Job object delete failed")
 	}
 

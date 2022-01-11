@@ -3,8 +3,6 @@ syntax = "proto3";
 // Package onos.a1t defines interfaces for managing A1 policies
 package onos.a1t;
 
-import "google/protobuf/any.proto";
-
 service A1T {
   rpc Create (CreateRequest) returns (CreateResponse) {
   }
@@ -34,7 +32,7 @@ message CreateResponse {
 }
 
 message GetRequest {
-    string id = 1;
+    Object object = 1;
 }
 
 message GetResponse {
@@ -61,52 +59,57 @@ message DeleteResponse {
     Object object = 1;
 }
 
-// Object is an one of the following: a kind (archetype of entity or relation), an entity, a relation
 message Object {
-    string id = 1;
-    uint64 revision = 2;
-  
     enum Type {
       UNSPECIFIED = 0;
       POLICY = 1;
       EIJOB = 2;
       SUBSCRIPTION = 3;
     }
-    Type type = 3;
+    Type type = 1;
   
     oneof obj {
-      Policy policy = 4;
-      EIJob eijob = 5;
+      Policy policy = 2;
+      EIJob eijob = 3;
+      Subscription subscription = 4;
     } 
 }
 
 message Policy {
     string id = 1;
     string typeid = 2;
-    google.protobuf.Any object = 3;
+    bytes object = 3;
     Status status = 4;
 }
 
 message EIJob {
     string id = 1;
     string typeid = 2;
-    string object = 3;
+    bytes object = 3;
     Status status = 4;   
 }
 
 message Status {
     message Problem {
-        string Detail = 1;
-        string Instance = 2;
-        string Status = 3;
-        string Title = 4;
-        string Type = 5;
+        string detail = 1;
+        string instance = 2;
+        string status = 3;
+        string title = 4;
+        string type = 5;
     }
 
-    string object = 1;
+    bool ok = 1;
     Problem problem = 2;
 }
 
-message ObjectValue {
-    map<string, string> value = 1;
+message Subscription {
+    string id = 1;
+    
+    enum Type {
+        POLICY = 0;
+        EIJOB = 1;
+      }
+
+    Type type = 2;
+    string address = 3;   
 }
