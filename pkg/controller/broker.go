@@ -5,9 +5,7 @@
 package controller
 
 import (
-	a1eistore "github.com/onosproject/onos-a1t/pkg/store/a1ei"
-	a1pstore "github.com/onosproject/onos-a1t/pkg/store/a1p"
-	substore "github.com/onosproject/onos-a1t/pkg/store/subscription"
+	"github.com/onosproject/onos-a1t/pkg/store"
 )
 
 type Broker interface {
@@ -15,7 +13,7 @@ type Broker interface {
 	A1EIController() A1EIController
 }
 
-func NewBroker(nonRTRICURL string, subscriptionStore substore.Store, policiesStore a1pstore.Store, eijobsStore a1eistore.Store) Broker {
+func NewBroker(nonRTRICURL string, subscriptionStore store.Store, policiesStore store.Store, eijobsStore store.Store) Broker {
 	return &broker{
 		a1pController:  NewA1PController(subscriptionStore, policiesStore),
 		a1eiController: NewA1EIController(nonRTRICURL, subscriptionStore, eijobsStore),

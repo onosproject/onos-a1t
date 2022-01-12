@@ -7,23 +7,23 @@ package subscription
 import (
 	"context"
 	"github.com/onosproject/onos-a1t/pkg/rnib"
+	"github.com/onosproject/onos-a1t/pkg/store"
 
 	topoapi "github.com/onosproject/onos-api/go/onos/topo"
 	"github.com/onosproject/onos-lib-go/pkg/logging"
 
 	"github.com/onosproject/onos-a1t/pkg/controller"
-	substore "github.com/onosproject/onos-a1t/pkg/store/subscription"
 )
 
 var log = logging.GetLogger("subscription")
 
 type SubscriptionManager struct {
 	broker            controller.Broker
-	subscriptionStore substore.Store
+	subscriptionStore store.Store
 	rnibClient        rnib.Client
 }
 
-func NewSubscriptionManager(broker controller.Broker, subscriptionStore substore.Store) (*SubscriptionManager, error) {
+func NewSubscriptionManager(broker controller.Broker, subscriptionStore store.Store) (*SubscriptionManager, error) {
 	rnibClient, err := rnib.NewClient()
 	if err != nil {
 		return &SubscriptionManager{}, err

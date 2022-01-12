@@ -6,11 +6,7 @@ package cli
 
 import (
 	"context"
-	"encoding/json"
-
-	a1eistore "github.com/onosproject/onos-a1t/pkg/store/a1ei"
-	a1pstore "github.com/onosproject/onos-a1t/pkg/store/a1p"
-	substore "github.com/onosproject/onos-a1t/pkg/store/subscription"
+	"github.com/onosproject/onos-a1t/pkg/store"
 
 	a1tapi "github.com/onosproject/onos-a1t/pkg/southbound/a1t"
 
@@ -20,7 +16,7 @@ import (
 )
 
 // NewService returns a new A1T interface service.
-func NewService(subscriptionStore substore.Store, policiesStore a1pstore.Store, eijobsStore a1eistore.Store) service.Service {
+func NewService(subscriptionStore store.Store, policiesStore store.Store, eijobsStore store.Store) service.Service {
 	return &Service{
 		subscriptionStore: subscriptionStore,
 		policiesStore:     policiesStore,
@@ -31,9 +27,9 @@ func NewService(subscriptionStore substore.Store, policiesStore a1pstore.Store, 
 // Service is a service implementation for administration.
 type Service struct {
 	service.Service
-	subscriptionStore substore.Store
-	policiesStore     a1pstore.Store
-	eijobsStore       a1eistore.Store
+	subscriptionStore store.Store
+	policiesStore     store.Store
+	eijobsStore       store.Store
 }
 
 // Register registers the Service with the gRPC server.
@@ -48,48 +44,48 @@ func (s Service) Register(r *grpc.Server) {
 
 // Server implements the A1T gRPC service for administrative facilities.
 type Server struct {
-	subscriptionStore substore.Store
-	policiesStore     a1pstore.Store
-	eijobsStore       a1eistore.Store
+	subscriptionStore store.Store
+	policiesStore     store.Store
+	eijobsStore       store.Store
 }
 
 func (s *Server) Get(ctx context.Context, request *a1tapi.GetRequest) (*a1tapi.GetResponse, error) {
 
 	response := &a1tapi.GetResponse{}
-
-	switch request.Object.GetType() {
-	case a1tapi.Object_POLICY:
-
-		policyObj := request.Object.GetPolicy()
-
-		a1pEntry, err := a1pstore.GetPolicyByID(ctx, s.policiesStore, policyObj.Id, policyObj.Typeid)
-		if err != nil {
-			return response, err
-		}
-
-		a1pEntryValue := a1pEntry.Value.(a1pstore.Value)
-
-		policyObjectValue, err := json.Marshal(a1pEntryValue.PolicyObject)
-		if err != nil {
-			return response, err
-		}
-
-		response := &a1tapi.GetResponse{
-			Object: &a1tapi.Object{
-				Type: a1tapi.Object_POLICY,
-				Obj: &a1tapi.Object_Policy{
-					Policy: &a1tapi.Policy{
-						Id:     policyObj.Id,
-						Typeid: policyObj.Typeid,
-						Object: policyObjectValue,
-					},
-				},
-			},
-		}
-		return response, nil
-
-	case a1tapi.Object_EIJOB:
-	}
+	//
+	//switch request.Object.GetType() {
+	//case a1tapi.Object_POLICY:
+	//
+	//	policyObj := request.Object.GetPolicy()
+	//
+	//	a1pEntry, err := a1pstore.GetPolicyByID(ctx, s.policiesStore, policyObj.Id, policyObj.Typeid)
+	//	if err != nil {
+	//		return response, err
+	//	}
+	//
+	//	a1pEntryValue := a1pEntry.Value.(a1pstore.Value)
+	//
+	//	policyObjectValue, err := json.Marshal(a1pEntryValue.PolicyObject)
+	//	if err != nil {
+	//		return response, err
+	//	}
+	//
+	//	response := &a1tapi.GetResponse{
+	//		Object: &a1tapi.Object{
+	//			Type: a1tapi.Object_POLICY,
+	//			Obj: &a1tapi.Object_Policy{
+	//				Policy: &a1tapi.Policy{
+	//					Id:     policyObj.Id,
+	//					Typeid: policyObj.Typeid,
+	//					Object: policyObjectValue,
+	//				},
+	//			},
+	//		},
+	//	}
+	//	return response, nil
+	//
+	//case a1tapi.Object_EIJOB:
+	//}
 
 	return response, nil
 }

@@ -6,6 +6,7 @@ package manager
 
 import (
 	"context"
+	"github.com/onosproject/onos-a1t/pkg/store"
 	"strconv"
 	"strings"
 
@@ -14,10 +15,6 @@ import (
 	nbirest "github.com/onosproject/onos-a1t/pkg/northbound/rest"
 	"github.com/onosproject/onos-a1t/pkg/rnib"
 	subs "github.com/onosproject/onos-a1t/pkg/subscription"
-
-	a1eistore "github.com/onosproject/onos-a1t/pkg/store/a1ei"
-	a1pstore "github.com/onosproject/onos-a1t/pkg/store/a1p"
-	substore "github.com/onosproject/onos-a1t/pkg/store/subscription"
 
 	"github.com/onosproject/onos-lib-go/pkg/logging"
 	"github.com/onosproject/onos-lib-go/pkg/northbound"
@@ -40,17 +37,17 @@ type Manager struct {
 	submanager        *subs.SubscriptionManager
 	broker            controller.Broker
 	config            Config
-	subscriptionStore substore.Store
-	policyStore       a1pstore.Store
-	eijobsStore       a1eistore.Store
+	subscriptionStore store.Store
+	policyStore       store.Store
+	eijobsStore       store.Store
 	rnibClient        rnib.Client
 }
 
 func NewManager(config Config) (*Manager, error) {
 
-	subscriptionStore := substore.NewStore()
-	policyStore := a1pstore.NewStore()
-	eijobsStore := a1eistore.NewStore()
+	subscriptionStore := store.NewStore()
+	policyStore := store.NewStore()
+	eijobsStore := store.NewStore()
 
 	broker := controller.NewBroker(config.NonRTRICURL, subscriptionStore, policyStore, eijobsStore)
 
