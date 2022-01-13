@@ -7,10 +7,9 @@ package controller
 import (
 	"context"
 	"fmt"
+	"github.com/onosproject/onos-a1t/pkg/store"
 
 	a1einbi "github.com/onosproject/onos-a1t/pkg/northbound/a1ap/enrichment_information"
-	a1eistore "github.com/onosproject/onos-a1t/pkg/store/a1ei"
-	substore "github.com/onosproject/onos-a1t/pkg/store/subscription"
 )
 
 type A1EIController interface {
@@ -23,12 +22,12 @@ type A1EIController interface {
 
 type a1eiController struct {
 	nonRTRICURL       string
-	eijobsStore       a1eistore.Store
-	subscriptionStore substore.Store
+	eijobsStore       store.Store
+	subscriptionStore store.Store
 	nbiClient         a1einbi.ClientWithResponsesInterface
 }
 
-func NewA1EIController(nonRTRICURL string, subscriptionStore substore.Store, eijobsStore a1eistore.Store) A1EIController {
+func NewA1EIController(nonRTRICURL string, subscriptionStore store.Store, eijobsStore store.Store) A1EIController {
 	nbiClient, err := a1einbi.NewClientWithResponses(nonRTRICURL)
 	if err != nil {
 		log.Fatal(err)

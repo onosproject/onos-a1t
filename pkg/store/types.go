@@ -4,26 +4,26 @@
 
 package store
 
-// EntityID is used for creating and entity definition
-type EntityID struct {
-	EntityID int64
-}
-
-type Key struct {
-	EntityID EntityID
-}
+import topoapi "github.com/onosproject/onos-api/go/onos/topo"
 
 type Entry struct {
-	Key   Key
+	Key   interface{}
 	Value interface{}
 }
 
-// EntityEvent a entity event
-type EntityEvent int
+// For watcher
+
+type Event struct {
+	Key   interface{}
+	Value interface{}
+	Type  interface{}
+}
+
+type EventType int
 
 const (
 	// None none cell event
-	None EntityEvent = iota
+	None EventType = iota
 	// Created created entity event
 	Created
 	// Updated updated entity event
@@ -32,9 +32,82 @@ const (
 	Deleted
 )
 
-// Event store event data structure
-type Event struct {
-	Key   interface{}
-	Value interface{}
-	Type  interface{}
+func (e EventType) String() string {
+	return [...]string{"None", "Created", "Update", "Deleted"}[e]
+}
+
+// For service definition
+
+type A1Service int
+
+const (
+	PolicyManagement A1Service = iota
+	EnrichmentInformation
+)
+
+func (s A1Service) String() string {
+	return [...]string{"PolicyManagement", "EnrichmentInformation"}[s]
+}
+
+type A1ServiceType struct {
+	A1Service A1Service
+	TypeID    string
+}
+
+// For subscription manager
+
+type SubscriptionKey struct {
+	TargetXAppID topoapi.ID
+}
+
+type SubscriptionValue struct {
+	A1EndpointIP          string
+	A1EndpointPort        int
+	A1ServiceCapabilities []A1ServiceType
+	SouthboundSessions    SouthboundSessions
+}
+
+type SouthboundSessions struct {
+	A1PMSessions A1PolicyManagementSessions
+	A1EISessions A1EnrichmentInformationSessions
+}
+
+type A1PolicyManagementSessions struct {
+	// PolicyStatusSession
+}
+
+type A1EnrichmentInformationSessions struct {
+	// EIQuerySession
+	// EIJobSetupSession
+	// EIJobUpdateSession
+	// EIJobDeleteSession
+	// EIJobStatusQuerySession
+}
+
+// For A1-PM/EI - A1Type/Obj - xApp mapping
+
+type A1Key struct {
+	TargetXAppID topoapi.ID
+}
+
+type A1PolicyObjectID string
+
+type A1PolicyObjectInfo struct {
+	A1ServiceType    A1ServiceType
+	A1PolicyObjectID A1PolicyObjectID
+}
+
+type A1EIJobObjectID string
+
+type A1EIJobObjectInfo struct {
+	A1ServiceType   A1ServiceType
+	A1EIJobObjectID A1EIJobObjectID
+}
+
+type A1PMValue struct {
+	A1PolicyObjects []A1PolicyObjectInfo
+}
+
+type A1EIValue struct {
+	A1EIJobObjects []A1EIJobObjectInfo
 }
