@@ -10,7 +10,7 @@ require (
 	github.com/gogo/protobuf v1.3.2
 	github.com/google/uuid v1.3.0
 	github.com/labstack/echo/v4 v4.6.1
-	github.com/onosproject/onos-api/go v0.8.12
+	github.com/onosproject/onos-api/go v0.8.19
 	github.com/onosproject/onos-ric-sdk-go v0.8.0
 	google.golang.org/grpc v1.41.0
 )
