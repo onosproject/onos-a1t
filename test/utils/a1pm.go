@@ -1,21 +1,18 @@
+// SPDX-FileCopyrightText: 2020-present Open Networking Foundation <info@opennetworking.org>
+//
+// SPDX-License-Identifier: LicenseRef-ONF-Member-Only-1.0
+
 package utils
 
 import (
-	"encoding/json"
 	"strings"
 
 	"github.com/santhosh-tekuri/jsonschema/v5"
 )
 
-func ValidateSchema(object, schemaObject map[string]interface{}) error {
-
-	ps, err := json.Marshal(schemaObject)
-	if err != nil {
-		return err
-	}
-
+func ValidateSchema(object, schemaObject string) error {
 	compiler := jsonschema.NewCompiler()
-	if err := compiler.AddResource("schema.json", strings.NewReader(string(ps))); err != nil {
+	if err := compiler.AddResource("schema.json", strings.NewReader(schemaObject)); err != nil {
 		return err
 	}
 	schema, err := compiler.Compile("schema.json")

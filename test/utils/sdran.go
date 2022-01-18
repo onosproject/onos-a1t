@@ -43,8 +43,8 @@ func CreateSdranRelease(c *input.Context) (*helm.HelmRelease, error) {
 		SetPassword(password).
 		Set("import.onos-a1t.enabled", true).
 		Set("import.onos-topo.enabled", true).
-		/* Set("import.ran-simulator.enabled", true).
-		Set("import.onos-kpimon.enabled", false). */
+		Set("import.ran-simulator.enabled", true).
+		Set("import.onos-kpimon.enabled", false).
 		Set("global.image.tag", "latest").
 		Set("global.image.registry", registry)
 

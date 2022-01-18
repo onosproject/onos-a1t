@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2020-present Open Networking Foundation <info@opennetworking.org>
+//
+// SPDX-License-Identifier: LicenseRef-ONF-Member-Only-1.0
+
 package nonrtric
 
 import (
@@ -17,7 +21,7 @@ type Controller interface {
 	A1PMGetPolicytypes(ctx context.Context) ([]string, error)
 
 	// GetPolicytypesPolicyTypeId request
-	A1PMGetPolicytypesPolicyTypeId(ctx context.Context, policyTypeId string) (*a1pm.PolicyTypeObject, error)
+	A1PMGetPolicytypesPolicyTypeId(ctx context.Context, policyTypeId string) (string, error)
 
 	// GetPolicytypesPolicyTypeIdPolicies request
 	A1PMGetPolicytypesPolicyTypeIdPolicies(ctx context.Context, policyTypeId string) ([]string, error)
@@ -26,15 +30,15 @@ type Controller interface {
 	A1PMDeletePolicytypesPolicyTypeIdPoliciesPolicyId(ctx context.Context, policyTypeId, policyId string) error
 
 	// GetPolicytypesPolicyTypeIdPoliciesPolicyId request
-	A1PMGetPolicytypesPolicyTypeIdPoliciesPolicyId(ctx context.Context, policyTypeId, policyId string) ([]string, error)
+	A1PMGetPolicytypesPolicyTypeIdPoliciesPolicyId(ctx context.Context, policyTypeId, policyId string) (string, error)
 
 	// PutPolicytypesPolicyTypeIdPoliciesPolicyId request with any body
 	A1PMPutPolicytypesPolicyTypeIdPoliciesPolicyIdWithBody(ctx context.Context, policyTypeId, policyId string, body string) error
 
-	A1PMPutPolicytypesPolicyTypeIdPoliciesPolicyId(ctx context.Context, policyTypeId, policyId string, body string) error
+	A1PMPutPolicytypesPolicyTypeIdPoliciesPolicyId(ctx context.Context, policyTypeId, policyId, param, body string) error
 
 	// GetPolicytypesPolicyTypeIdPoliciesPolicyIdStatus request
-	A1PMGetPolicytypesPolicyTypeIdPoliciesPolicyIdStatus(ctx context.Context, policyTypeId, policyId string) ([]string, error)
+	A1PMGetPolicytypesPolicyTypeIdPoliciesPolicyIdStatus(ctx context.Context, policyTypeId, policyId string) (string, error)
 
 	/*
 		A1EI Server Handlers
