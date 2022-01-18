@@ -7,6 +7,7 @@ package controller
 import (
 	"context"
 	"fmt"
+
 	"github.com/onosproject/onos-a1t/pkg/store"
 
 	a1einbi "github.com/onosproject/onos-a1t/pkg/northbound/a1ap/enrichment_information"

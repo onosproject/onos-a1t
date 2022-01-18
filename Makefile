@@ -37,7 +37,8 @@ buflint: #@HELP run the "buf check lint" command on the proto files in 'api'
 
 test: # @HELP run the unit tests and source code validation producing a golang style report
 test: build deps linters license_check_a1t
-	go test -race github.com/onosproject/onos-a1t/...
+	go test -race github.com/onosproject/onos-a1t/pkg/...
+	go test -race github.com/onosproject/onos-a1t/cmd/...
 
 jenkins-test: # @HELP run the unit tests and source code validation producing a junit style report for Jenkins
 jenkins-test: build deps license_check_a1t linters

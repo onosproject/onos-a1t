@@ -6,9 +6,10 @@ package manager
 
 import (
 	"context"
-	"github.com/onosproject/onos-a1t/pkg/store"
 	"strconv"
 	"strings"
+
+	"github.com/onosproject/onos-a1t/pkg/store"
 
 	"github.com/onosproject/onos-a1t/pkg/controller"
 	nbi "github.com/onosproject/onos-a1t/pkg/northbound/cli"
@@ -136,6 +137,6 @@ func (m *Manager) start() error {
 func (m *Manager) Run() {
 	err := m.start()
 	if err != nil {
-		log.Errorf("Error when starting KPIMON: %v", err)
+		log.Errorf("Error when starting A1T: %v", err)
 	}
 }
