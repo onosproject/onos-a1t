@@ -29,6 +29,17 @@ type Store interface {
 
 	// Watch watches the event of this local store
 	Watch(ctx context.Context, ch chan<- Event) error
+
+	// Print prints all store entities for debugging
+	Print()
+}
+
+func NewStore() Store {
+	watchers := NewWatchers()
+	return &store{
+		localStore: make(map[interface{}]*Entry),
+		watchers:   watchers,
+	}
 }
 
 type store struct {
@@ -37,11 +48,18 @@ type store struct {
 	watchers   *Watchers
 }
 
-func NewStore() Store {
-	watchers := NewWatchers()
-	return &store{
-		localStore: make(map[interface{}]*Entry),
-		watchers:   watchers,
+func (s *store) Print() {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	for k, v := range s.localStore {
+		switch v.Value.(type) {
+		case *SubscriptionValue:
+			log.Infof("Subscription store - Key: %v, value: %v", k.(SubscriptionKey), v.Value.(*SubscriptionValue))
+		case *A1PMValue:
+			log.Infof("A1PM store - Key: %v, value: %v", k.(SubscriptionKey), v.Value.(*A1PMValue))
+		case *A1EIValue:
+			log.Infof("A1EI store - Key: %v, value: %v", k.(SubscriptionKey), v.Value.(*A1EIValue))
+		}
 	}
 }
 

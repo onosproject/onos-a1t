@@ -62,26 +62,8 @@ type SubscriptionKey struct {
 
 type SubscriptionValue struct {
 	A1EndpointIP          string
-	A1EndpointPort        int
-	A1ServiceCapabilities []A1ServiceType
-	SouthboundSessions    SouthboundSessions
-}
-
-type SouthboundSessions struct {
-	A1PMSessions A1PolicyManagementSessions
-	A1EISessions A1EnrichmentInformationSessions
-}
-
-type A1PolicyManagementSessions struct {
-	// PolicyStatusSession
-}
-
-type A1EnrichmentInformationSessions struct {
-	// EIQuerySession
-	// EIJobSetupSession
-	// EIJobUpdateSession
-	// EIJobDeleteSession
-	// EIJobStatusQuerySession
+	A1EndpointPort        uint32
+	A1ServiceCapabilities []*A1ServiceType
 }
 
 // For A1-PM/EI - A1Type/Obj - xApp mapping

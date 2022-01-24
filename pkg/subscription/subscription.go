@@ -11,38 +11,34 @@ import (
 
 	topoapi "github.com/onosproject/onos-api/go/onos/topo"
 	"github.com/onosproject/onos-lib-go/pkg/logging"
-
-	"github.com/onosproject/onos-a1t/pkg/controller"
 )
 
 var log = logging.GetLogger("subscription")
 
-type SubscriptionManager struct {
-	broker            controller.Broker
+type Manager struct {
 	subscriptionStore store.Store
 	rnibClient        rnib.Client
 }
 
-func NewSubscriptionManager(broker controller.Broker, subscriptionStore store.Store) (*SubscriptionManager, error) {
+func NewSubscriptionManager(subscriptionStore store.Store) (*Manager, error) {
 	rnibClient, err := rnib.NewClient()
 	if err != nil {
-		return &SubscriptionManager{}, err
+		return &Manager{}, err
 	}
 
-	return &SubscriptionManager{
-		broker:            broker,
+	return &Manager{
 		subscriptionStore: subscriptionStore,
 		rnibClient:        rnibClient,
 	}, nil
 }
 
-func (sm *SubscriptionManager) Start() error {
+func (sm *Manager) Start() error {
 	log.Info("Start SubscriptionManager")
 
 	go func() {
 		ctx, cancel := context.WithCancel(context.Background())
 		defer cancel()
-		err := sm.watchXappChanges(ctx)
+		err := sm.watchXAppChanges(ctx)
 		if err != nil {
 			return
 		}
@@ -50,7 +46,7 @@ func (sm *SubscriptionManager) Start() error {
 	return nil
 }
 
-func (sm *SubscriptionManager) watchXappChanges(ctx context.Context) error {
+func (sm *Manager) watchXAppChanges(ctx context.Context) error {
 	ch := make(chan topoapi.Event)
 	err := sm.rnibClient.WatchTopoXapps(ctx, ch)
 	if err != nil {
@@ -60,20 +56,23 @@ func (sm *SubscriptionManager) watchXappChanges(ctx context.Context) error {
 
 	for topoEvent := range ch {
 		log.Debugf("Received topo event: %v", topoEvent)
-
 		if topoEvent.Object.GetEntity().GetKindID() == topoapi.XAPP {
-
 			if topoEvent.Type == topoapi.EventType_ADDED || topoEvent.Type == topoapi.EventType_NONE {
 				log.Info("xApp Added")
 				err = sm.rnibClient.AddA1TXappRelation(ctx, topoEvent.Object.GetID())
 				if err != nil {
 					log.Error(err)
 				}
-				//TODO Create xapp subscription and get xApp Aspects to get "interests" in a1p and/or a1ei
-
+				err = sm.createSubscription(ctx, topoEvent.Object)
+				if err != nil {
+					log.Error(err)
+				}
 			} else if topoEvent.Type == topoapi.EventType_REMOVED {
 				log.Info("xApp Removed")
-				//TODO Get all xapp subscriptions and delete them (handle status of a1p and a1ei)
+				err = sm.deleteSubscription(ctx, topoEvent.Object)
+				if err != nil {
+					log.Error(err)
+				}
 			}
 		}
 	}
@@ -81,33 +80,66 @@ func (sm *SubscriptionManager) watchXappChanges(ctx context.Context) error {
 	return nil
 }
 
-// func (sm *SubscriptionManager) createSubscription(ctx context.Context, xappinfo topoapi.XAppInfo) error {
+func (sm *Manager) createSubscription(ctx context.Context, topoObject topoapi.Object) error {
+	// add relation
+	err := sm.rnibClient.AddA1TXappRelation(ctx, topoObject.GetID())
+	if err != nil {
+		return err
+	}
+	// get aspect and store it to local store
+	xAppInfo, err := sm.rnibClient.GetXappAspects(ctx, topoObject.GetID())
+	if err != nil {
+		return err
+	}
 
-// 	subKey := substore.NewSubscriptionKey(xappinfo.String())
+	subKey := store.SubscriptionKey{
+		TargetXAppID: topoObject.GetID(),
+	}
+	subValue := &store.SubscriptionValue{
+		A1ServiceCapabilities: make([]*store.A1ServiceType, 0),
+	}
 
-// 	policyTypes := []string{}
-// 	a1polTypes := xappinfo.GetA1PolicyTypes()
+	// get endpoint information
+	for _, i := range xAppInfo.GetInterfaces() {
+		if i.GetType() == topoapi.Interface_INTERFACE_A1_XAPP {
+			subValue.A1EndpointIP = i.GetIP()
+			subValue.A1EndpointPort = i.GetPort()
+		}
+	}
 
-// 	for _, pt := range a1polTypes {
-// 		policyTypes = append(policyTypes, pt.String())
-// 	}
+	// get capabilities
+	for _, p := range xAppInfo.GetA1PolicyTypes() {
+		serviceTypeDef := &store.A1ServiceType{
+			A1Service: store.PolicyManagement,
+			TypeID:    string(p.GetID()),
+		}
+		subValue.A1ServiceCapabilities = append(subValue.A1ServiceCapabilities, serviceTypeDef)
+	}
 
-// 	subValue := substore.Value{
-// 		Client: substore.Client{},
-// 		// Subscriptions: substore.Subscription{
-// 		// 	// Types: policyTypes,
-// 		// },
-// 	}
+	// todo: have to be clarified but now by default it added the EI capability; at this moment, it's fine
+	eiServiceTypeDef := &store.A1ServiceType{
+		A1Service: store.EnrichmentInformation,
+		TypeID:    "",
+	}
+	subValue.A1ServiceCapabilities = append(subValue.A1ServiceCapabilities, eiServiceTypeDef)
 
-// 	_, err := sm.subscriptionStore.Put(ctx, subKey, subValue)
-// 	if err != nil {
-// 		log.Warn(err)
-// 		return err
-// 	}
+	_, err = sm.subscriptionStore.Put(ctx, subKey, subValue)
+	if err != nil {
+		return err
+	}
 
-// 	return nil
-// }
+	return nil
+}
 
-// func (sm *SubscriptionManager) updateSubscription() {}
+func (sm *Manager) deleteSubscription(ctx context.Context, topoObject topoapi.Object) error {
+	subKey := store.SubscriptionKey{
+		TargetXAppID: topoObject.GetID(),
+	}
 
-// func (sm *SubscriptionManager) deleteSubscription() {}
+	err := sm.subscriptionStore.Delete(ctx, subKey)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
