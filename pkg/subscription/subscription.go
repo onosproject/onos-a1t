@@ -58,18 +58,22 @@ func (sm *Manager) watchXAppChanges(ctx context.Context) error {
 		log.Debugf("Received topo event: %v", topoEvent)
 		if topoEvent.Object.GetEntity().GetKindID() == topoapi.XAPP {
 			if topoEvent.Type == topoapi.EventType_ADDED || topoEvent.Type == topoapi.EventType_NONE {
-				log.Info("xApp Added")
-				err = sm.rnibClient.AddA1TXappRelation(ctx, topoEvent.Object.GetID())
-				if err != nil {
-					log.Error(err)
-				}
+				log.Info("xApp topo object added")
 				err = sm.createSubscription(ctx, topoEvent.Object)
+				// todo: add health check logic
+				// todo: add retry logic
 				if err != nil {
 					log.Error(err)
 				}
 			} else if topoEvent.Type == topoapi.EventType_REMOVED {
-				log.Info("xApp Removed")
+				log.Info("xApp topo object removed")
 				err = sm.deleteSubscription(ctx, topoEvent.Object)
+				if err != nil {
+					log.Error(err)
+				}
+			} else if topoEvent.Type == topoapi.EventType_UPDATED {
+				log.Info("xApp topo object updated")
+				err = sm.updateSubscription(ctx, topoEvent.Object)
 				if err != nil {
 					log.Error(err)
 				}
@@ -139,6 +143,20 @@ func (sm *Manager) deleteSubscription(ctx context.Context, topoObject topoapi.Ob
 	err := sm.subscriptionStore.Delete(ctx, subKey)
 	if err != nil {
 		return err
+	}
+
+	return nil
+}
+
+func (sm *Manager) updateSubscription(ctx context.Context, topoObject topoapi.Object) error {
+	xAppInfo, err := sm.rnibClient.GetXappAspects(ctx, topoObject.GetID())
+	if err != nil {
+		return err
+	}
+
+	// if topo has updated to have no interfaces, this means that xApp is terminated; subscription should be removed
+	if len(xAppInfo.GetInterfaces()) == 0 {
+		sm.deleteSubscription(ctx, topoObject)
 	}
 
 	return nil

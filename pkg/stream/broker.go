@@ -38,6 +38,8 @@ type broker struct {
 }
 
 func (b *broker) Print() {
+	b.mu.Lock()
+	defer b.mu.Unlock()
 	logBroker.Info("Print streams:")
 	for k, v := range b.streams {
 		logBroker.Infof("stream key: %v, value: %v", k, v)
@@ -51,16 +53,14 @@ func (b *broker) Print() {
 func (b *broker) AddStream(ctx context.Context, id ID) {
 	logBroker.Infof("Creating stream for %v", id)
 	b.mu.Lock()
+	defer b.mu.Unlock()
 	_, ok := b.streams[id]
-	b.mu.Unlock()
 	if ok {
 		logBroker.Warnf("Stream for %v already exists", id)
 	}
 	stream := NewDirectionalStream(id)
-	b.mu.Lock()
 	b.streams[id] = stream
 	b.watchers[id] = make(map[uuid.UUID]chan *SBStreamMessage)
-	b.mu.Unlock()
 
 	go func() {
 		for {
@@ -79,14 +79,17 @@ func (b *broker) AddStream(ctx context.Context, id ID) {
 }
 
 func (b *broker) Close(id ID) {
+	logBroker.Infof("Closing stream id %v", id)
 	b.mu.Lock()
 	defer b.mu.Unlock()
 	stream, ok := b.streams[id]
 	if !ok {
 		logBroker.Warnf("Stream for SID %v not found", id)
+		return
 	}
 	stream.Close()
 	delete(b.streams, id)
+	delete(b.watchers, id)
 }
 
 func (b *broker) Send(id ID, message *SBStreamMessage) error {
@@ -98,10 +101,10 @@ func (b *broker) Send(id ID, message *SBStreamMessage) error {
 func (b *broker) Watch(id ID, ch chan *SBStreamMessage) error {
 	watcherID := uuid.New()
 	b.mu.Lock()
+	defer b.mu.Unlock()
 	if _, ok := b.streams[id]; !ok {
 		return errors.NewNotFound("stream ID %v not found", id)
 	}
 	b.watchers[id][watcherID] = ch
-	b.mu.Unlock()
 	return nil
 }
