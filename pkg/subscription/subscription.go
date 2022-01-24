@@ -156,7 +156,10 @@ func (sm *Manager) updateSubscription(ctx context.Context, topoObject topoapi.Ob
 
 	// if topo has updated to have no interfaces, this means that xApp is terminated; subscription should be removed
 	if len(xAppInfo.GetInterfaces()) == 0 {
-		sm.deleteSubscription(ctx, topoObject)
+		err = sm.deleteSubscription(ctx, topoObject)
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil
