@@ -163,6 +163,10 @@ func (a *a1eiClient) incomingEIQueryForwarder(ctx context.Context) {
 			a1eiLog.Warn("A1EI SBI client incoming forwarder for EI Query service is just closed")
 			return
 		default:
+			if _, ok := a.sessions[stream.EIQuery]; !ok {
+				a1eiLog.Warn("A1EI SBI client incoming forwarder for EI Query service is just closed")
+				return
+			}
 			msg, err := a.sessions[stream.EIQuery].(a1.EIService_EIQueryClient).Recv()
 			if err == io.EOF || err == context.Canceled {
 				a1eiLog.Warn("A1EI SBI client incoming forwarder for EI Query service is just closed")
@@ -199,7 +203,11 @@ func (a *a1eiClient) incomingEIJobSetupForwarder(ctx context.Context) {
 			a1eiLog.Warn("A1EI SBI client incoming forwarder for EI Job Setup service is just closed")
 			return
 		default:
-			msg, err := a.sessions[stream.EIQuery].(a1.EIService_EIJobSetupClient).Recv()
+			if _, ok := a.sessions[stream.EIJobSetup]; !ok {
+				a1eiLog.Warn("A1EI SBI client incoming forwarder for EI Job Setup service is just closed")
+				return
+			}
+			msg, err := a.sessions[stream.EIJobSetup].(a1.EIService_EIJobSetupClient).Recv()
 			if err == io.EOF || err == context.Canceled {
 				a1eiLog.Warn("A1EI SBI client incoming forwarder for EI Job Setup service is just closed")
 				return
@@ -235,7 +243,11 @@ func (a *a1eiClient) incomingEIJobUpdateForwarder(ctx context.Context) {
 			a1eiLog.Warn("A1EI SBI client incoming forwarder for EI Job Update service is just closed")
 			return
 		default:
-			msg, err := a.sessions[stream.EIQuery].(a1.EIService_EIJobUpdateClient).Recv()
+			if _, ok := a.sessions[stream.EIJobUpdate]; !ok {
+				a1eiLog.Warn("A1EI SBI client incoming forwarder for EI Job Update service is just closed")
+				return
+			}
+			msg, err := a.sessions[stream.EIJobUpdate].(a1.EIService_EIJobUpdateClient).Recv()
 			if err == io.EOF || err == context.Canceled {
 				a1eiLog.Warn("A1EI SBI client incoming forwarder for EI Job Update service is just closed")
 				return
@@ -271,7 +283,11 @@ func (a *a1eiClient) incomingEIJobDeleteForwarder(ctx context.Context) {
 			a1eiLog.Warn("A1EI SBI client incoming forwarder for EI Job Delete service is just closed")
 			return
 		default:
-			msg, err := a.sessions[stream.EIQuery].(a1.EIService_EIJobDeleteClient).Recv()
+			if _, ok := a.sessions[stream.EIJobDelete]; !ok {
+				a1eiLog.Warn("A1EI SBI client incoming forwarder for EI Job Delete service is just closed")
+				return
+			}
+			msg, err := a.sessions[stream.EIJobDelete].(a1.EIService_EIJobDeleteClient).Recv()
 			if err == io.EOF || err == context.Canceled {
 				a1eiLog.Warn("A1EI SBI client incoming forwarder for EI Job Delete service is just closed")
 				return
@@ -307,7 +323,11 @@ func (a *a1eiClient) incomingEIJobStatusQueryForwarder(ctx context.Context) {
 			a1eiLog.Warn("A1EI SBI client incoming forwarder for EI Job Status Query service is just closed")
 			return
 		default:
-			msg, err := a.sessions[stream.EIQuery].(a1.EIService_EIJobStatusQueryServer).Recv()
+			if _, ok := a.sessions[stream.EIJobStatusQuery]; !ok {
+				a1eiLog.Warn("A1EI SBI client incoming forwarder for EI Job Status Query service is just closed")
+				return
+			}
+			msg, err := a.sessions[stream.EIJobStatusQuery].(a1.EIService_EIJobStatusQueryClient).Recv()
 			if err == io.EOF || err == context.Canceled {
 				a1eiLog.Warn("A1EI SBI client incoming forwarder for EI Job Status Query service is just closed")
 				return
@@ -418,28 +438,6 @@ func (a *a1eiClient) forwardResponseMsg(msg interface{}, messageType stream.A1SB
 }
 
 func (a *a1eiClient) Close() {
-	// close gRPC sessions
-	err := a.sessions[stream.EIQuery].(a1.EIService_EIQueryClient).CloseSend()
-	if err != nil {
-		a1eiLog.Warn(err)
-	}
-	err = a.sessions[stream.EIJobSetup].(a1.EIService_EIJobSetupClient).CloseSend()
-	if err != nil {
-		a1eiLog.Warn(err)
-	}
-	err = a.sessions[stream.EIJobUpdate].(a1.EIService_EIJobUpdateClient).CloseSend()
-	if err != nil {
-		a1eiLog.Warn(err)
-	}
-	err = a.sessions[stream.EIJobDelete].(a1.EIService_EIJobDeleteClient).CloseSend()
-	if err != nil {
-		a1eiLog.Warn(err)
-	}
-	err = a.sessions[stream.EIJobStatusQuery].(a1.EIService_EIJobStatusQueryClient).CloseSend()
-	if err != nil {
-		a1eiLog.Warn(err)
-	}
-
 	defer delete(a.sessions, stream.EIQuery)
 	defer delete(a.sessions, stream.EIJobSetup)
 	defer delete(a.sessions, stream.EIJobUpdate)

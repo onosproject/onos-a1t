@@ -64,6 +64,7 @@ func (s *store) Print() {
 }
 
 func (s *store) Put(ctx context.Context, key interface{}, value interface{}) (*Entry, error) {
+	log.Infof("Creating store key %v", key)
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	entry := &Entry{
@@ -89,9 +90,19 @@ func (s *store) Get(ctx context.Context, key interface{}) (*Entry, error) {
 }
 
 func (s *store) Delete(ctx context.Context, key interface{}) error {
+	log.Infof("Deleting store key %v", key)
 	s.mu.Lock()
 	defer s.mu.Unlock()
+	if _, ok := s.localStore[key]; !ok {
+		return nil
+	}
+	s.watchers.Send(Event{
+		Key:   key,
+		Value: s.localStore[key],
+		Type:  Deleted,
+	})
 	delete(s.localStore, key)
+
 	return nil
 }
 

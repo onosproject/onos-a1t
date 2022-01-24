@@ -92,6 +92,10 @@ func (a *a1pClient) incomingPolicyStatusForwarder(ctx context.Context) {
 			a1pLog.Warn("A1P SBI client incoming forwarder for Policy Status service is just closed")
 			return
 		default:
+			if _, ok := a.sessions[stream.PolicyStatus]; !ok {
+				a1pLog.Warn("A1P SBI client incoming forwarder for Policy Status service is just closed")
+				return
+			}
 			msg, err := a.sessions[stream.PolicyStatus].(a1.PolicyService_PolicyStatusClient).Recv()
 			if err == io.EOF || err == context.Canceled {
 				a1pLog.Warn("A1P SBI client incoming forwarder for Policy Status service is just closed")
@@ -195,11 +199,6 @@ func (a *a1pClient) forwardResponseMsg(msg interface{}, messageType stream.A1SBI
 }
 
 func (a *a1pClient) Close() {
-	// close gRPC sessions
-	err := a.sessions[stream.PolicyStatus].(a1.PolicyService_PolicyStatusClient).CloseSend()
-	if err != nil {
-		a1pLog.Warn(err)
-	}
 	defer delete(a.sessions, stream.PolicyStatus)
 
 	// delete stream

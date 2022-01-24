@@ -7,10 +7,13 @@ package stream
 import (
 	"context"
 	"github.com/onosproject/onos-lib-go/pkg/errors"
+	"github.com/onosproject/onos-lib-go/pkg/logging"
 	"io"
 	"sync"
 	"time"
 )
+
+var logStream = logging.GetLogger("stream")
 
 var SendTimeout = time.Second * 5
 
@@ -56,10 +59,11 @@ func NewDirectionalStreamWriter(ch chan *SBStreamMessage) Writer {
 type directionalStreamWriter struct {
 	ch     chan *SBStreamMessage
 	closed bool
-	mu     *sync.RWMutex
+	mu     sync.RWMutex
 }
 
 func (d *directionalStreamWriter) Close() {
+	logStream.Infof("Deleting stream")
 	d.mu.Lock()
 	defer d.mu.Unlock()
 	d.closed = true
