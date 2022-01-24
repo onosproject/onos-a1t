@@ -5,14 +5,9 @@
 package cli
 
 import (
-	"context"
 	"github.com/onosproject/onos-a1t/pkg/store"
 
-	a1tapi "github.com/onosproject/onos-a1t/pkg/southbound/a1t"
-
 	"github.com/onosproject/onos-lib-go/pkg/logging/service"
-
-	"google.golang.org/grpc"
 )
 
 // NewService returns a new A1T interface service.
@@ -33,94 +28,94 @@ type Service struct {
 }
 
 // Register registers the Service with the gRPC server.
-func (s Service) Register(r *grpc.Server) {
-	server := &Server{
-		subscriptionStore: s.subscriptionStore,
-		policiesStore:     s.policiesStore,
-		eijobsStore:       s.eijobsStore,
-	}
-	a1tapi.RegisterA1TServer(r, server)
-}
-
-// Server implements the A1T gRPC service for administrative facilities.
-type Server struct {
-	subscriptionStore store.Store
-	policiesStore     store.Store
-	eijobsStore       store.Store
-}
-
-func (s *Server) Get(ctx context.Context, request *a1tapi.GetRequest) (*a1tapi.GetResponse, error) {
-
-	response := &a1tapi.GetResponse{}
-	//
-	//switch request.Object.GetType() {
-	//case a1tapi.Object_POLICY:
-	//
-	//	policyObj := request.Object.GetPolicy()
-	//
-	//	a1pEntry, err := a1pstore.GetPolicyByID(ctx, s.policiesStore, policyObj.Id, policyObj.Typeid)
-	//	if err != nil {
-	//		return response, err
-	//	}
-	//
-	//	a1pEntryValue := a1pEntry.Value.(a1pstore.Value)
-	//
-	//	policyObjectValue, err := json.Marshal(a1pEntryValue.PolicyObject)
-	//	if err != nil {
-	//		return response, err
-	//	}
-	//
-	//	response := &a1tapi.GetResponse{
-	//		Object: &a1tapi.Object{
-	//			Type: a1tapi.Object_POLICY,
-	//			Obj: &a1tapi.Object_Policy{
-	//				Policy: &a1tapi.Policy{
-	//					Id:     policyObj.Id,
-	//					Typeid: policyObj.Typeid,
-	//					Object: policyObjectValue,
-	//				},
-	//			},
-	//		},
-	//	}
-	//	return response, nil
-	//
-	//case a1tapi.Object_EIJOB:
-	//}
-
-	return response, nil
-}
-
-func (s *Server) List(ctx context.Context, request *a1tapi.GetRequest) (*a1tapi.ListResponse, error) {
-
-	response := &a1tapi.ListResponse{}
-
-	return response, nil
-}
-
-func (s *Server) Watch(request *a1tapi.GetRequest, server a1tapi.A1T_WatchServer) error {
-
-	// response := &a1tapi.GetResponse{}
-
-	return nil
-}
-
-func (s *Server) Create(ctx context.Context, request *a1tapi.CreateRequest) (*a1tapi.CreateResponse, error) {
-
-	response := &a1tapi.CreateResponse{}
-
-	return response, nil
-}
-
-func (s *Server) Update(ctx context.Context, request *a1tapi.UpdateRequest) (*a1tapi.UpdateResponse, error) {
-
-	response := &a1tapi.UpdateResponse{}
-
-	return response, nil
-}
-
-func (s *Server) Delete(ctx context.Context, request *a1tapi.DeleteRequest) (*a1tapi.DeleteResponse, error) {
-
-	response := &a1tapi.DeleteResponse{}
-
-	return response, nil
-}
+//func (s Service) Register(r *grpc.Server) {
+//	server := &Server{
+//		subscriptionStore: s.subscriptionStore,
+//		policiesStore:     s.policiesStore,
+//		eijobsStore:       s.eijobsStore,
+//	}
+//	a1tapi.RegisterA1TServer(r, server)
+//}
+//
+//// Server implements the A1T gRPC service for administrative facilities.
+//type Server struct {
+//	subscriptionStore store.Store
+//	policiesStore     store.Store
+//	eijobsStore       store.Store
+//}
+//
+//func (s *Server) Get(ctx context.Context, request *a1tapi.GetRequest) (*a1tapi.GetResponse, error) {
+//
+//	response := &a1tapi.GetResponse{}
+//	//
+//	//switch request.Object.GetType() {
+//	//case a1tapi.Object_POLICY:
+//	//
+//	//	policyObj := request.Object.GetPolicy()
+//	//
+//	//	a1pEntry, err := a1pstore.GetPolicyByID(ctx, s.policiesStore, policyObj.Id, policyObj.Typeid)
+//	//	if err != nil {
+//	//		return response, err
+//	//	}
+//	//
+//	//	a1pEntryValue := a1pEntry.Value.(a1pstore.Value)
+//	//
+//	//	policyObjectValue, err := json.Marshal(a1pEntryValue.PolicyObject)
+//	//	if err != nil {
+//	//		return response, err
+//	//	}
+//	//
+//	//	response := &a1tapi.GetResponse{
+//	//		Object: &a1tapi.Object{
+//	//			Type: a1tapi.Object_POLICY,
+//	//			Obj: &a1tapi.Object_Policy{
+//	//				Policy: &a1tapi.Policy{
+//	//					Id:     policyObj.Id,
+//	//					Typeid: policyObj.Typeid,
+//	//					Object: policyObjectValue,
+//	//				},
+//	//			},
+//	//		},
+//	//	}
+//	//	return response, nil
+//	//
+//	//case a1tapi.Object_EIJOB:
+//	//}
+//
+//	return response, nil
+//}
+//
+//func (s *Server) List(ctx context.Context, request *a1tapi.GetRequest) (*a1tapi.ListResponse, error) {
+//
+//	response := &a1tapi.ListResponse{}
+//
+//	return response, nil
+//}
+//
+//func (s *Server) Watch(request *a1tapi.GetRequest, server a1tapi.A1T_WatchServer) error {
+//
+//	// response := &a1tapi.GetResponse{}
+//
+//	return nil
+//}
+//
+//func (s *Server) Create(ctx context.Context, request *a1tapi.CreateRequest) (*a1tapi.CreateResponse, error) {
+//
+//	response := &a1tapi.CreateResponse{}
+//
+//	return response, nil
+//}
+//
+//func (s *Server) Update(ctx context.Context, request *a1tapi.UpdateRequest) (*a1tapi.UpdateResponse, error) {
+//
+//	response := &a1tapi.UpdateResponse{}
+//
+//	return response, nil
+//}
+//
+//func (s *Server) Delete(ctx context.Context, request *a1tapi.DeleteRequest) (*a1tapi.DeleteResponse, error) {
+//
+//	response := &a1tapi.DeleteResponse{}
+//
+//	return response, nil
+//}

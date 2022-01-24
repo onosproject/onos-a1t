@@ -6,13 +6,13 @@ package manager
 
 import (
 	"context"
+	"github.com/onosproject/onos-a1t/pkg/southbound"
+	"github.com/onosproject/onos-a1t/pkg/store"
+	"github.com/onosproject/onos-a1t/pkg/stream"
 	"strconv"
 	"strings"
 
-	"github.com/onosproject/onos-a1t/pkg/store"
-
 	"github.com/onosproject/onos-a1t/pkg/controller"
-	nbi "github.com/onosproject/onos-a1t/pkg/northbound/cli"
 	nbirest "github.com/onosproject/onos-a1t/pkg/northbound/rest"
 	"github.com/onosproject/onos-a1t/pkg/rnib"
 	subs "github.com/onosproject/onos-a1t/pkg/subscription"
@@ -34,9 +34,11 @@ type Config struct {
 }
 
 type Manager struct {
-	restserver        *nbirest.Server
-	submanager        *subs.SubscriptionManager
+	restServer        *nbirest.Server
+	subManager        *subs.Manager
+	sbManager         southbound.Manager
 	broker            controller.Broker
+	streamBroker      stream.Broker
 	config            Config
 	subscriptionStore store.Store
 	policyStore       store.Store
@@ -52,10 +54,14 @@ func NewManager(config Config) (*Manager, error) {
 
 	broker := controller.NewBroker(config.NonRTRICURL, subscriptionStore, policyStore, eijobsStore)
 
-	subManager, err := subs.NewSubscriptionManager(broker, subscriptionStore)
+	streamBroker := stream.NewBroker()
+
+	subManager, err := subs.NewSubscriptionManager(subscriptionStore)
 	if err != nil {
 		return nil, err
 	}
+
+	sbManager := southbound.NewSouthboundManager(streamBroker, subscriptionStore)
 
 	restServer, err := nbirest.NewRestServer(config.BaseURL, broker)
 	if err != nil {
@@ -68,9 +74,11 @@ func NewManager(config Config) (*Manager, error) {
 	}
 
 	return &Manager{
-		restserver:        restServer,
-		submanager:        subManager,
+		restServer:        restServer,
+		subManager:        subManager,
+		sbManager:         sbManager,
 		broker:            broker,
+		streamBroker:      streamBroker,
 		subscriptionStore: subscriptionStore,
 		policyStore:       policyStore,
 		eijobsStore:       eijobsStore,
@@ -88,7 +96,7 @@ func (m *Manager) startNorthboundServer() error {
 		true,
 		northbound.SecurityConfig{}))
 
-	s.AddService(nbi.NewService(m.subscriptionStore, m.policyStore, m.eijobsStore))
+	//s.AddService(nbi.NewService(m.subscriptionStore, m.policyStore, m.eijobsStore))
 
 	doneCh := make(chan error)
 	go func() {
@@ -123,13 +131,19 @@ func (m *Manager) start() error {
 		return err
 	}
 
-	err = m.submanager.Start()
+	err = m.subManager.Start()
 	if err != nil {
 		log.Warn(err)
 		return err
 	}
 
-	m.restserver.Start()
+	err = m.sbManager.Run(context.Background())
+	if err != nil {
+		log.Warn(err)
+		return err
+	}
+
+	m.restServer.Start()
 
 	return nil
 }
