@@ -42,13 +42,11 @@ func (m *manager) Close(xAppID string, a1Service stream.A1Service) {
 	case stream.PolicyManagement:
 		log.Infof("Closing A1 policy management southbound client for xApp ID %v", xAppID)
 		m.clientMu.Lock()
-		// todo: call closing client function at this line
 		delete(m.a1pClients, xAppID)
 		m.clientMu.Unlock()
 	case stream.EnrichmentInformation:
 		log.Infof("Closing A1 EI southbound client for xApp ID %v", xAppID)
 		m.clientMu.Lock()
-		// todo: call closing client function at this line
 		delete(m.a1eiClients, xAppID)
 		m.clientMu.Unlock()
 	}
@@ -82,6 +80,11 @@ func (m *manager) subStoreListener(ctx context.Context, ch chan store.Event) {
 			if err != nil {
 				log.Warn(err)
 			}
+		case store.Updated:
+			err = m.createEventSubStoreHandler(ctx, entry)
+			if err != nil {
+				log.Warn(err)
+			}
 		case store.Deleted:
 			err = m.deleteEventSubStoreHandler(ctx, entry)
 			if err != nil {
@@ -92,14 +95,32 @@ func (m *manager) subStoreListener(ctx context.Context, ch chan store.Event) {
 }
 
 func (m *manager) createEventSubStoreHandler(ctx context.Context, entry *store.Entry) error {
-	log.Infof("Subscription store entry %v was just created", *entry)
+	log.Infof("Subscription store entry %v was just created or updated", *entry)
 	key := entry.Key.(store.SubscriptionKey)
 	value := entry.Value.(*store.SubscriptionValue)
+	m.clientMu.Lock()
+	defer m.clientMu.Unlock()
+	// todo: currently, a1ei is default session. If not for the future, it should be optional
+	if _, ok := m.a1eiClients[string(key.TargetXAppID)]; !ok {
+		// call NewClient function
+		a1eiClient, err := sbclient.NewA1EIClient(ctx, string(key.TargetXAppID), value.A1EndpointIP, value.A1EndpointPort, m.streamBroker)
+		if err != nil {
+			return err
+		}
+		// store the created client to the map
+		m.a1eiClients[string(key.TargetXAppID)] = a1eiClient
+		go func() {
+			err = a1eiClient.Run(ctx)
+			if err != nil {
+				log.Warn(err)
+			}
+		}()
+	}
 	for _, c := range value.A1ServiceCapabilities {
 		switch c.A1Service {
 		case store.PolicyManagement:
 			if _, ok := m.a1pClients[string(key.TargetXAppID)]; ok {
-				continue
+				break
 			}
 			// call NewClient function
 			a1pClient, err := sbclient.NewA1PClient(ctx, string(key.TargetXAppID), value.A1EndpointIP, value.A1EndpointPort, m.streamBroker)
@@ -114,23 +135,6 @@ func (m *manager) createEventSubStoreHandler(ctx context.Context, entry *store.E
 					log.Warn(err)
 				}
 			}()
-		case store.EnrichmentInformation:
-			if _, ok := m.a1eiClients[string(key.TargetXAppID)]; ok {
-				continue
-			}
-			// call NewClient function
-			a1eiClient, err := sbclient.NewA1EIClient(ctx, string(key.TargetXAppID), value.A1EndpointIP, value.A1EndpointPort, m.streamBroker)
-			if err != nil {
-				return err
-			}
-			// store the created client to the map
-			m.a1eiClients[string(key.TargetXAppID)] = a1eiClient
-			go func() {
-				err = a1eiClient.Run(ctx)
-				if err != nil {
-					log.Warn(err)
-				}
-			}()
 		}
 	}
 	return nil
@@ -139,20 +143,12 @@ func (m *manager) createEventSubStoreHandler(ctx context.Context, entry *store.E
 func (m *manager) deleteEventSubStoreHandler(ctx context.Context, entry *store.Entry) error {
 	log.Infof("Subscription store entry %v was just deleted", *entry)
 	key := entry.Key.(store.SubscriptionKey)
-	value := entry.Value.(*store.SubscriptionValue)
-	for _, c := range value.A1ServiceCapabilities {
-		switch c.A1Service {
-		case store.PolicyManagement:
-			if _, ok := m.a1pClients[string(key.TargetXAppID)]; ok {
-				continue
-			}
-			m.Close(string(key.TargetXAppID), stream.PolicyManagement)
-		case store.EnrichmentInformation:
-			if _, ok := m.a1eiClients[string(key.TargetXAppID)]; ok {
-				continue
-			}
-			m.Close(string(key.TargetXAppID), stream.EnrichmentInformation)
-		}
+	if _, ok := m.a1eiClients[string(key.TargetXAppID)]; ok {
+		m.Close(string(key.TargetXAppID), stream.EnrichmentInformation)
 	}
+	if _, ok := m.a1pClients[string(key.TargetXAppID)]; ok {
+		m.Close(string(key.TargetXAppID), stream.PolicyManagement)
+	}
+
 	return nil
 }

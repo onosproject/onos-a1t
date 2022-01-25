@@ -61,7 +61,6 @@ func (sm *Manager) watchXAppChanges(ctx context.Context) error {
 				log.Info("xApp topo object added")
 				err = sm.createSubscription(ctx, topoEvent.Object)
 				// todo: add health check logic
-				// todo: add retry logic
 				if err != nil {
 					log.Error(err)
 				}
@@ -160,6 +159,42 @@ func (sm *Manager) updateSubscription(ctx context.Context, topoObject topoapi.Ob
 		if err != nil {
 			return err
 		}
+	}
+
+	subKey := store.SubscriptionKey{
+		TargetXAppID: topoObject.GetID(),
+	}
+	subValue := &store.SubscriptionValue{
+		A1ServiceCapabilities: make([]*store.A1ServiceType, 0),
+	}
+
+	// get endpoint information
+	for _, i := range xAppInfo.GetInterfaces() {
+		if i.GetType() == topoapi.Interface_INTERFACE_A1_XAPP {
+			subValue.A1EndpointIP = i.GetIP()
+			subValue.A1EndpointPort = i.GetPort()
+		}
+	}
+
+	// get capabilities
+	for _, p := range xAppInfo.GetA1PolicyTypes() {
+		serviceTypeDef := &store.A1ServiceType{
+			A1Service: store.PolicyManagement,
+			TypeID:    string(p.GetID()),
+		}
+		subValue.A1ServiceCapabilities = append(subValue.A1ServiceCapabilities, serviceTypeDef)
+	}
+
+	// todo: have to be clarified but now by default it added the EI capability; at this moment, it's fine
+	eiServiceTypeDef := &store.A1ServiceType{
+		A1Service: store.EnrichmentInformation,
+		TypeID:    "",
+	}
+	subValue.A1ServiceCapabilities = append(subValue.A1ServiceCapabilities, eiServiceTypeDef)
+
+	_, err = sm.subscriptionStore.Update(ctx, subKey, subValue)
+	if err != nil {
+		return err
 	}
 
 	return nil
