@@ -21,6 +21,9 @@ type Store interface {
 	// Get gets the entry from the local store
 	Get(ctx context.Context, key interface{}) (*Entry, error)
 
+	// Update updates the entry to the local store
+	Update(ctx context.Context, key interface{}, value interface{}) (*Entry, error)
+
 	// Delete deletes the entry from the local store
 	Delete(ctx context.Context, key interface{}) error
 
@@ -76,6 +79,23 @@ func (s *store) Put(ctx context.Context, key interface{}, value interface{}) (*E
 		Key:   key,
 		Value: entry,
 		Type:  Created,
+	})
+	return entry, nil
+}
+
+func (s *store) Update(ctx context.Context, key interface{}, value interface{}) (*Entry, error) {
+	log.Infof("Creating store key %v", key)
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	entry := &Entry{
+		Key:   key,
+		Value: value,
+	}
+	s.localStore[key] = entry
+	s.watchers.Send(Event{
+		Key:   key,
+		Value: entry,
+		Type:  Updated,
 	})
 	return entry, nil
 }
