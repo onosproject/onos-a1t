@@ -54,6 +54,7 @@ func (a *a1eiClient) Run(ctx context.Context) error {
 
 	err = a.runOutgoingMsgDispatcher(ctx)
 	if err != nil {
+		a1eiLog.Warn(err)
 		a.Close()
 		return err
 	}
@@ -358,7 +359,7 @@ func (a *a1eiClient) incomingEIJobStatusQueryForwarder(ctx context.Context) {
 func (a *a1eiClient) runOutgoingMsgDispatcher(ctx context.Context) error {
 	msgCh := make(chan *stream.SBStreamMessage)
 	sbID := stream.ID{
-		SrcEndpointID:  "a1p-controller",
+		SrcEndpointID:  "a1ei-controller",
 		DestEndpointID: stream.GetEndpointIDWithTargetXAppID(a.targetXAppID, stream.EnrichmentInformation),
 	}
 	err := a.streamBroker.Watch(sbID, msgCh)

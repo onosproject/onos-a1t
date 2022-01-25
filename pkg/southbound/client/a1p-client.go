@@ -55,6 +55,7 @@ func (a *a1pClient) Run(ctx context.Context) error {
 	err = a.runOutgoingMsgDispatcher(ctx)
 
 	if err != nil {
+		a1pLog.Warn(err)
 		a.Close()
 		return err
 	}
