@@ -64,32 +64,27 @@ func (b *broker) AddStream(ctx context.Context, id ID) {
 	b.streams[id] = stream
 	b.watchers[id] = make(map[uuid.UUID]chan *SBStreamMessage)
 
-	go func() {
+	go func(m *sync.RWMutex) {
 		for {
 			msg, err := stream.Recv(ctx)
 			if err != nil {
 				logBroker.Warnf("Forwarding channel closed: %v", err)
 				return
 			}
-			b.mu.Lock()
+			m.Lock()
 			logBroker.Infof("watchers: %v", b.watchers)
 			for _, v := range b.watchers[id] {
 				logBroker.Infof("Send %v to watcher %v", msg, v)
-				go func(vCh chan *SBStreamMessage) {
-					//defer func() {
-					//	recover()
-					//}()
-					//v <- msg
-					select {
-					case vCh <- msg:
-					default:
-					}
-				}(v)
-				logBroker.Infof("Sent %v to watcher %v", msg, v)
+				select {
+				case v <- msg:
+					logBroker.Infof("Sent %v to watcher %v", msg, v)
+				default:
+					logBroker.Infof("Failed to send %v on %v", msg, v)
+				}
 			}
-			b.mu.Unlock()
+			m.Unlock()
 		}
-	}()
+	}(&b.mu)
 }
 
 func (b *broker) Close(id ID) {

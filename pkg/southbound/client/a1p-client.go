@@ -12,6 +12,7 @@ import (
 	"github.com/onosproject/onos-lib-go/pkg/errors"
 	"github.com/onosproject/onos-lib-go/pkg/logging"
 	"io"
+	"time"
 )
 
 var a1pLog = logging.GetLogger("southbound", "a1p-client")
@@ -151,32 +152,33 @@ func (a *a1pClient) runOutgoingMsgDispatcher(ctx context.Context) error {
 
 func (a *a1pClient) outgoingMsgDispatcher(ctx context.Context, msg *stream.SBStreamMessage) {
 	a1pLog.Infof("Received message from controller: %v", *msg)
+	tCtx, _ := context.WithTimeout(context.Background(), 5 * time.Second)
 	var err error
 	switch msg.A1SBIRPCType {
 	case stream.PolicySetup:
 		a1pLog.Info("Sending PolicySetup Request message")
-		result, err := a.grpcClient.PolicySetup(ctx, msg.Payload.(*a1.PolicyRequestMessage))
+		result, err := a.grpcClient.PolicySetup(tCtx, msg.Payload.(*a1.PolicyRequestMessage))
 		if err != nil {
 			a1pLog.Warn(err)
 		}
 		a.forwardResponseMsg(result, stream.PolicyResultMessage, stream.PolicySetup)
 	case stream.PolicyUpdate:
 		a1pLog.Info("Sending PolicyUpdate Request message")
-		result, err := a.grpcClient.PolicyUpdate(ctx, msg.Payload.(*a1.PolicyRequestMessage))
+		result, err := a.grpcClient.PolicyUpdate(tCtx, msg.Payload.(*a1.PolicyRequestMessage))
 		if err != nil {
 			a1pLog.Warn(err)
 		}
 		a.forwardResponseMsg(result, stream.PolicyResultMessage, stream.PolicyUpdate)
 	case stream.PolicyDelete:
 		a1pLog.Info("Sending PolicyDelete Request message")
-		result, err := a.grpcClient.PolicyDelete(ctx, msg.Payload.(*a1.PolicyRequestMessage))
+		result, err := a.grpcClient.PolicyDelete(tCtx, msg.Payload.(*a1.PolicyRequestMessage))
 		if err != nil {
 			a1pLog.Warn(err)
 		}
 		a.forwardResponseMsg(result, stream.PolicyResultMessage, stream.PolicyDelete)
 	case stream.PolicyQuery:
 		a1pLog.Info("Sending PolicyQuery Request message")
-		result, err := a.grpcClient.PolicyQuery(ctx, msg.Payload.(*a1.PolicyRequestMessage))
+		result, err := a.grpcClient.PolicyQuery(tCtx, msg.Payload.(*a1.PolicyRequestMessage))
 		if err != nil {
 			a1pLog.Warn(err)
 		}

@@ -155,7 +155,6 @@ func (a *a1pController) dispatchReceivedMsg(ctx context.Context, sbMessage *stre
 			Message: &a1.AckMessage{
 				Header: msg.Message.Header,
 			},
-			PayloadType:             msg.PayloadType,
 			NotificationDestination: msg.NotificationDestination,
 		}
 
