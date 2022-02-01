@@ -17,10 +17,12 @@ var log = logging.GetLogger("subscription")
 
 type Manager struct {
 	subscriptionStore store.Store
-	rnibClient        rnib.Client
+	policiesStore     store.Store
+	eiJobsStore       store.Store
+	rnibClient        rnib.TopoClient
 }
 
-func NewSubscriptionManager(subscriptionStore store.Store) (*Manager, error) {
+func NewSubscriptionManager(subscriptionStore store.Store, policiesStore store.Store, eiJobsStore store.Store) (*Manager, error) {
 	rnibClient, err := rnib.NewClient()
 	if err != nil {
 		return &Manager{}, err
@@ -28,6 +30,8 @@ func NewSubscriptionManager(subscriptionStore store.Store) (*Manager, error) {
 
 	return &Manager{
 		subscriptionStore: subscriptionStore,
+		policiesStore:     policiesStore,
+		eiJobsStore:       eiJobsStore,
 		rnibClient:        rnibClient,
 	}, nil
 }
@@ -131,6 +135,26 @@ func (sm *Manager) createSubscription(ctx context.Context, topoObject topoapi.Ob
 		return err
 	}
 
+	// add entry on a1pm and a1ei stores
+	a1Key := store.A1Key{
+		TargetXAppID: topoObject.GetID(),
+	}
+	a1PmValue := &store.A1PMValue{
+		A1PolicyObjects: make(map[store.A1PolicyObjectID]store.A1ServiceType),
+	}
+	a1EiValue := &store.A1EIValue{
+		A1EIJobObjects: make(map[store.A1EIJobObjectID]store.A1ServiceType),
+	}
+
+	_, err = sm.policiesStore.Put(ctx, a1Key, a1PmValue)
+	if err != nil {
+		return err
+	}
+	_, err = sm.eiJobsStore.Put(ctx, a1Key, a1EiValue)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -140,6 +164,19 @@ func (sm *Manager) deleteSubscription(ctx context.Context, topoObject topoapi.Ob
 	}
 
 	err := sm.subscriptionStore.Delete(ctx, subKey)
+	if err != nil {
+		return err
+	}
+
+	// delete entry on a1pm and a1ei stores
+	a1Key := store.A1Key{
+		TargetXAppID: topoObject.GetID(),
+	}
+	err = sm.policiesStore.Delete(ctx, a1Key)
+	if err != nil {
+		return err
+	}
+	err = sm.eiJobsStore.Delete(ctx, a1Key)
 	if err != nil {
 		return err
 	}

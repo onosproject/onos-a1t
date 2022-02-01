@@ -74,22 +74,12 @@ type A1Key struct {
 
 type A1PolicyObjectID string
 
-type A1PolicyObjectInfo struct {
-	A1ServiceType    A1ServiceType
-	A1PolicyObjectID A1PolicyObjectID
-}
-
 type A1EIJobObjectID string
 
-type A1EIJobObjectInfo struct {
-	A1ServiceType   A1ServiceType
-	A1EIJobObjectID A1EIJobObjectID
-}
-
 type A1PMValue struct {
-	A1PolicyObjects []A1PolicyObjectInfo
+	A1PolicyObjects map[A1PolicyObjectID]A1ServiceType
 }
 
 type A1EIValue struct {
-	A1EIJobObjects []A1EIJobObjectInfo
+	A1EIJobObjects map[A1EIJobObjectID]A1ServiceType
 }

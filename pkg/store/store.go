@@ -59,9 +59,9 @@ func (s *store) Print() {
 		case *SubscriptionValue:
 			log.Infof("Subscription store - Key: %v, value: %v", k.(SubscriptionKey), v.Value.(*SubscriptionValue))
 		case *A1PMValue:
-			log.Infof("A1PM store - Key: %v, value: %v", k.(SubscriptionKey), v.Value.(*A1PMValue))
+			log.Infof("A1PM store - Key: %v, value: %v", k.(A1Key), v.Value.(*A1PMValue))
 		case *A1EIValue:
-			log.Infof("A1EI store - Key: %v, value: %v", k.(SubscriptionKey), v.Value.(*A1EIValue))
+			log.Infof("A1EI store - Key: %v, value: %v", k.(A1Key), v.Value.(*A1EIValue))
 		}
 	}
 }

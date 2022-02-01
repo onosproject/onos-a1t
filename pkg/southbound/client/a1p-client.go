@@ -6,6 +6,7 @@ package sbclient
 
 import (
 	"context"
+	"github.com/google/uuid"
 	"github.com/onosproject/onos-a1t/pkg/stream"
 	"github.com/onosproject/onos-api/go/onos/a1t/a1"
 	"github.com/onosproject/onos-lib-go/pkg/errors"
@@ -131,7 +132,9 @@ func (a *a1pClient) runOutgoingMsgDispatcher(ctx context.Context) error {
 		SrcEndpointID:  "a1p-controller",
 		DestEndpointID: stream.GetEndpointIDWithTargetXAppID(a.targetXAppID, stream.PolicyManagement),
 	}
-	err := a.streamBroker.Watch(sbID, msgCh)
+
+	watcherID := uuid.New()
+	err := a.streamBroker.Watch(sbID, msgCh, watcherID)
 	if err != nil {
 		return err
 	}
@@ -147,33 +150,39 @@ func (a *a1pClient) runOutgoingMsgDispatcher(ctx context.Context) error {
 }
 
 func (a *a1pClient) outgoingMsgDispatcher(ctx context.Context, msg *stream.SBStreamMessage) {
+	a1pLog.Infof("Received message from controller: %v", *msg)
 	var err error
 	switch msg.A1SBIRPCType {
 	case stream.PolicySetup:
+		a1pLog.Info("Sending PolicySetup Request message")
 		result, err := a.grpcClient.PolicySetup(ctx, msg.Payload.(*a1.PolicyRequestMessage))
 		if err != nil {
 			a1pLog.Warn(err)
 		}
 		a.forwardResponseMsg(result, stream.PolicyResultMessage, stream.PolicySetup)
 	case stream.PolicyUpdate:
+		a1pLog.Info("Sending PolicyUpdate Request message")
 		result, err := a.grpcClient.PolicyUpdate(ctx, msg.Payload.(*a1.PolicyRequestMessage))
 		if err != nil {
 			a1pLog.Warn(err)
 		}
 		a.forwardResponseMsg(result, stream.PolicyResultMessage, stream.PolicyUpdate)
 	case stream.PolicyDelete:
+		a1pLog.Info("Sending PolicyDelete Request message")
 		result, err := a.grpcClient.PolicyDelete(ctx, msg.Payload.(*a1.PolicyRequestMessage))
 		if err != nil {
 			a1pLog.Warn(err)
 		}
 		a.forwardResponseMsg(result, stream.PolicyResultMessage, stream.PolicyDelete)
 	case stream.PolicyQuery:
+		a1pLog.Info("Sending PolicyQuery Request message")
 		result, err := a.grpcClient.PolicyQuery(ctx, msg.Payload.(*a1.PolicyRequestMessage))
 		if err != nil {
 			a1pLog.Warn(err)
 		}
 		a.forwardResponseMsg(result, stream.PolicyResultMessage, stream.PolicyQuery)
 	case stream.PolicyStatus:
+		a1pLog.Info("Sending PolicStatus message")
 		err = a.sessions[stream.PolicyStatus].(a1.PolicyService_PolicyStatusClient).Send(msg.Payload.(*a1.PolicyAckMessage))
 		if err != nil {
 			a1pLog.Warn(err)

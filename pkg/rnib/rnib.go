@@ -29,15 +29,17 @@ type TopoClient interface {
 	AddA1TXappRelation(ctx context.Context, xappID topoapi.ID) error
 	GetA1TTopoID() topoapi.ID
 	GetXappRelationTopoID(xappID topoapi.ID) topoapi.ID
+	GetPolicyTypes(ctx context.Context) (map[topoapi.PolicyTypeID]*topoapi.A1PolicyType, error)
+	GetXAppIDsForPolicyTypeID(ctx context.Context, policyTypeID string) ([]string, error)
 }
 
 // NewClient creates a new topo SDK client
-func NewClient() (Client, error) {
+func NewClient() (TopoClient, error) {
 	sdkClient, err := toposdk.NewClient()
 	if err != nil {
-		return Client{}, err
+		return &Client{}, err
 	}
-	cl := Client{
+	cl := &Client{
 		client: sdkClient,
 	}
 	return cl, nil
@@ -46,6 +48,50 @@ func NewClient() (Client, error) {
 // Client topo SDK client
 type Client struct {
 	client toposdk.Client
+}
+
+func (c *Client) GetXAppIDsForPolicyTypeID(ctx context.Context, policyTypeID string) ([]string, error) {
+	targetXAppIDs := make([]string, 0)
+	objects, err := c.client.List(ctx, toposdk.WithListFilters(getXappFilter()))
+	if err != nil {
+		return nil, err
+	}
+
+	for _, object := range objects {
+		xAppObject := &topoapi.XAppInfo{}
+		err = object.GetAspect(xAppObject)
+		if err != nil {
+			return nil, err
+		}
+		for _, t := range xAppObject.A1PolicyTypes {
+			if string(t.ID) == policyTypeID {
+				targetXAppIDs = append(targetXAppIDs, string(object.ID))
+				break
+			}
+		}
+	}
+	return targetXAppIDs, nil
+}
+
+func (c *Client) GetPolicyTypes(ctx context.Context) (map[topoapi.PolicyTypeID]*topoapi.A1PolicyType, error) {
+	policies := make(map[topoapi.PolicyTypeID]*topoapi.A1PolicyType)
+	objects, err := c.client.List(ctx, toposdk.WithListFilters(getXappFilter()))
+	if err != nil {
+		return nil, err
+	}
+
+	for _, object := range objects {
+		xappObject := &topoapi.XAppInfo{}
+		err = object.GetAspect(xappObject)
+		if err != nil {
+			return nil, err
+		}
+		for _, t := range xappObject.A1PolicyTypes {
+			policies[t.ID] = t
+		}
+	}
+
+	return policies, nil
 }
 
 func (c *Client) GetXappAspects(ctx context.Context, xappID topoapi.ID) (*topoapi.XAppInfo, error) {

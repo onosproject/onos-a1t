@@ -18,7 +18,8 @@ type Broker interface {
 	Close(id ID)
 	AddStream(ctx context.Context, id ID)
 	Send(id ID, message *SBStreamMessage) error
-	Watch(id ID, ch chan *SBStreamMessage) error
+	Watch(id ID, ch chan *SBStreamMessage, watcherID uuid.UUID) error
+	DeleteWatcher(id ID, watcherID uuid.UUID)
 	Print()
 }
 
@@ -70,6 +71,7 @@ func (b *broker) AddStream(ctx context.Context, id ID) {
 				return
 			}
 			b.mu.Lock()
+			logBroker.Info("watchers: %v", b.watchers)
 			for _, v := range b.watchers[id] {
 				v <- msg
 			}
@@ -98,8 +100,7 @@ func (b *broker) Send(id ID, message *SBStreamMessage) error {
 	return b.streams[id].Send(message)
 }
 
-func (b *broker) Watch(id ID, ch chan *SBStreamMessage) error {
-	watcherID := uuid.New()
+func (b *broker) Watch(id ID, ch chan *SBStreamMessage, watcherID uuid.UUID) error {
 	b.mu.Lock()
 	defer b.mu.Unlock()
 	if _, ok := b.streams[id]; !ok {
@@ -107,4 +108,12 @@ func (b *broker) Watch(id ID, ch chan *SBStreamMessage) error {
 	}
 	b.watchers[id][watcherID] = ch
 	return nil
+}
+
+func (b *broker) DeleteWatcher(id ID, watcherID uuid.UUID) {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	logBroker.Infof("Delete watcherID: %v, watchers", watcherID, b.watchers)
+	delete(b.watchers[id], watcherID)
+	logBroker.Infof("Deleted watcherID: %v, watchers", watcherID, b.watchers)
 }

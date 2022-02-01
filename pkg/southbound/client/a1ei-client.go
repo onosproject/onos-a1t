@@ -6,6 +6,7 @@ package sbclient
 
 import (
 	"context"
+	"github.com/google/uuid"
 	"github.com/onosproject/onos-a1t/pkg/stream"
 	"github.com/onosproject/onos-api/go/onos/a1t/a1"
 	"github.com/onosproject/onos-lib-go/pkg/errors"
@@ -362,7 +363,9 @@ func (a *a1eiClient) runOutgoingMsgDispatcher(ctx context.Context) error {
 		SrcEndpointID:  "a1ei-controller",
 		DestEndpointID: stream.GetEndpointIDWithTargetXAppID(a.targetXAppID, stream.EnrichmentInformation),
 	}
-	err := a.streamBroker.Watch(sbID, msgCh)
+
+	watcherID := uuid.New()
+	err := a.streamBroker.Watch(sbID, msgCh, watcherID)
 	if err != nil {
 		return err
 	}
