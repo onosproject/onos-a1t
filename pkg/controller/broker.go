@@ -24,6 +24,7 @@ func NewBroker(nonRTRICURL string, subscriptionStore store.Store, eijobsStore st
 	return &broker{
 		a1pController:  NewA1PController(subscriptionStore, rnibClient, streamBroker),
 		a1eiController: NewA1EIController(nonRTRICURL, subscriptionStore, eijobsStore, rnibClient, streamBroker),
+		rnibClient:     rnibClient,
 	}
 }
 

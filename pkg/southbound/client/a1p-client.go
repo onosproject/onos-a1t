@@ -141,7 +141,7 @@ func (a *a1pClient) runOutgoingMsgDispatcher(ctx context.Context) error {
 
 	go func(msgCh chan *stream.SBStreamMessage) {
 		for msg := range msgCh {
-			a.outgoingMsgDispatcher(ctx, msg)
+			go a.outgoingMsgDispatcher(ctx, msg)
 		}
 	}(msgCh)
 
@@ -182,7 +182,7 @@ func (a *a1pClient) outgoingMsgDispatcher(ctx context.Context, msg *stream.SBStr
 		}
 		a.forwardResponseMsg(result, stream.PolicyResultMessage, stream.PolicyQuery)
 	case stream.PolicyStatus:
-		a1pLog.Info("Sending PolicStatus message")
+		a1pLog.Info("Sending PolicAck message")
 		err = a.sessions[stream.PolicyStatus].(a1.PolicyService_PolicyStatusClient).Send(msg.Payload.(*a1.PolicyAckMessage))
 		if err != nil {
 			a1pLog.Warn(err)
@@ -191,6 +191,7 @@ func (a *a1pClient) outgoingMsgDispatcher(ctx context.Context, msg *stream.SBStr
 }
 
 func (a *a1pClient) forwardResponseMsg(msg interface{}, messageType stream.A1SBIMessageType, rpcType stream.A1SBIRPCType) {
+	a1pLog.Info("Forwarding response message")
 	sbMessage := &stream.SBStreamMessage{
 		TargetXAppID:     a.targetXAppID,
 		A1SBIMessageType: messageType,

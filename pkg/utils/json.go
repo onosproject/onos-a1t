@@ -14,6 +14,8 @@ import (
 
 var jsonValLog = logging.GetLogger("utils", "json-validator")
 
+const NotificationDestination = "notificationDestination"
+
 func JsonValidateWithTypeID(policyTypeID string, jsonDoc string) bool {
 	schemeDoc, ok := policyschemas.PolicySchemas[policyTypeID]
 	if !ok {
@@ -44,36 +46,40 @@ func JsonValidate(schemaDoc string, jsonDoc string) bool {
 
 func ConvertStringFormatJsonToMap(doc string) map[string]interface{} {
 	var result map[string]interface{}
-	json.Unmarshal([]byte(doc), &result)
+	err := json.Unmarshal([]byte(doc), &result)
+	if err != nil {
+		jsonValLog.Error(err)
+		return nil
+	}
 	return result
 }
 
 func GetPolicyObject(query map[string]interface{}) map[string]interface{} {
-	if _, ok := query["policyId"]; ok {
-		delete(query, "policyId")
+	result := make(map[string]interface{})
+
+	for k, v := range query {
+		if k != "policyId" && k != "policyTypeId" {
+			result[k] = v
+		}
 	}
 
-	if _, ok := query["policyTypeId"]; ok {
-		delete(query, "policyTypeId")
-	}
-
-	return query
+	return result
 }
 
 func PolicyObjListValidate(objs interface{}) (bool, error) {
-	switch objs.(type) {
+	switch objs := objs.(type) {
 	case []map[string]interface{}:
-		if len(objs.([]map[string]interface{})) == 0 {
+		if len(objs) == 0 {
 			return false, errors.NewNotFound("there is no policy object")
 		}
 
-		targetDoc, err := json.Marshal(objs.([]map[string]interface{})[0])
+		targetDoc, err := json.Marshal(objs)
 		if err != nil {
 			return false, err
 		}
 
-		for i := 1; i < len(objs.([]map[string]interface{})); i++ {
-			tmpDoc, err := json.Marshal(objs.([]map[string]interface{})[0])
+		for i := 1; i < len(objs); i++ {
+			tmpDoc, err := json.Marshal(objs[0])
 			if err != nil {
 				return false, err
 			}
@@ -85,17 +91,17 @@ func PolicyObjListValidate(objs interface{}) (bool, error) {
 
 		return true, nil
 	case [][]string:
-		if len(objs.([][]string)) == 0 {
+		if len(objs) == 0 {
 			return false, errors.NewNotFound("there is no policy object")
 		}
 
-		targetDoc, err := json.Marshal(objs.([][]string)[0])
+		targetDoc, err := json.Marshal(objs[0])
 		if err != nil {
 			return false, err
 		}
 
-		for i := 1; i < len(objs.([][]string)); i++ {
-			tmpDoc, err := json.Marshal(objs.([][]string)[0])
+		for i := 1; i < len(objs); i++ {
+			tmpDoc, err := json.Marshal(objs[0])
 			if err != nil {
 				return false, err
 			}

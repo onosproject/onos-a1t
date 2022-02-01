@@ -12,7 +12,10 @@ import (
 	"github.com/onosproject/onos-ric-sdk-go/pkg/utils/creds"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
+	"time"
 )
+
+const GRPCTimeout = time.Second * 5
 
 func createGRPCConn(ipAddress string, port uint32) (*grpc.ClientConn, error) {
 	tlsConfig, err := creds.GetClientCredentials()
