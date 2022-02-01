@@ -152,7 +152,8 @@ func (a *a1pClient) runOutgoingMsgDispatcher(ctx context.Context) error {
 
 func (a *a1pClient) outgoingMsgDispatcher(ctx context.Context, msg *stream.SBStreamMessage) {
 	a1pLog.Infof("Received message from controller: %v", *msg)
-	tCtx, _ := context.WithTimeout(context.Background(), 5*time.Second)
+	tCtx, tCancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer tCancel()
 	var err error
 	switch msg.A1SBIRPCType {
 	case stream.PolicySetup:
