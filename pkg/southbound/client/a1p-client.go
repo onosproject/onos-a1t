@@ -6,11 +6,13 @@ package sbclient
 
 import (
 	"context"
+	"github.com/google/uuid"
 	"github.com/onosproject/onos-a1t/pkg/stream"
 	"github.com/onosproject/onos-api/go/onos/a1t/a1"
 	"github.com/onosproject/onos-lib-go/pkg/errors"
 	"github.com/onosproject/onos-lib-go/pkg/logging"
 	"io"
+	"time"
 )
 
 var a1pLog = logging.GetLogger("southbound", "a1p-client")
@@ -131,14 +133,16 @@ func (a *a1pClient) runOutgoingMsgDispatcher(ctx context.Context) error {
 		SrcEndpointID:  "a1p-controller",
 		DestEndpointID: stream.GetEndpointIDWithTargetXAppID(a.targetXAppID, stream.PolicyManagement),
 	}
-	err := a.streamBroker.Watch(sbID, msgCh)
+
+	watcherID := uuid.New()
+	err := a.streamBroker.Watch(sbID, msgCh, watcherID)
 	if err != nil {
 		return err
 	}
 
 	go func(msgCh chan *stream.SBStreamMessage) {
 		for msg := range msgCh {
-			a.outgoingMsgDispatcher(ctx, msg)
+			go a.outgoingMsgDispatcher(ctx, msg)
 		}
 	}(msgCh)
 
@@ -147,33 +151,41 @@ func (a *a1pClient) runOutgoingMsgDispatcher(ctx context.Context) error {
 }
 
 func (a *a1pClient) outgoingMsgDispatcher(ctx context.Context, msg *stream.SBStreamMessage) {
+	a1pLog.Infof("Received message from controller: %v", *msg)
+	tCtx, tCancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer tCancel()
 	var err error
 	switch msg.A1SBIRPCType {
 	case stream.PolicySetup:
-		result, err := a.grpcClient.PolicySetup(ctx, msg.Payload.(*a1.PolicyRequestMessage))
+		a1pLog.Info("Sending PolicySetup Request message")
+		result, err := a.grpcClient.PolicySetup(tCtx, msg.Payload.(*a1.PolicyRequestMessage))
 		if err != nil {
 			a1pLog.Warn(err)
 		}
 		a.forwardResponseMsg(result, stream.PolicyResultMessage, stream.PolicySetup)
 	case stream.PolicyUpdate:
-		result, err := a.grpcClient.PolicyUpdate(ctx, msg.Payload.(*a1.PolicyRequestMessage))
+		a1pLog.Info("Sending PolicyUpdate Request message")
+		result, err := a.grpcClient.PolicyUpdate(tCtx, msg.Payload.(*a1.PolicyRequestMessage))
 		if err != nil {
 			a1pLog.Warn(err)
 		}
 		a.forwardResponseMsg(result, stream.PolicyResultMessage, stream.PolicyUpdate)
 	case stream.PolicyDelete:
-		result, err := a.grpcClient.PolicyDelete(ctx, msg.Payload.(*a1.PolicyRequestMessage))
+		a1pLog.Info("Sending PolicyDelete Request message")
+		result, err := a.grpcClient.PolicyDelete(tCtx, msg.Payload.(*a1.PolicyRequestMessage))
 		if err != nil {
 			a1pLog.Warn(err)
 		}
 		a.forwardResponseMsg(result, stream.PolicyResultMessage, stream.PolicyDelete)
 	case stream.PolicyQuery:
-		result, err := a.grpcClient.PolicyQuery(ctx, msg.Payload.(*a1.PolicyRequestMessage))
+		a1pLog.Info("Sending PolicyQuery Request message")
+		result, err := a.grpcClient.PolicyQuery(tCtx, msg.Payload.(*a1.PolicyRequestMessage))
 		if err != nil {
 			a1pLog.Warn(err)
 		}
 		a.forwardResponseMsg(result, stream.PolicyResultMessage, stream.PolicyQuery)
 	case stream.PolicyStatus:
+		a1pLog.Info("Sending PolicAck message")
 		err = a.sessions[stream.PolicyStatus].(a1.PolicyService_PolicyStatusClient).Send(msg.Payload.(*a1.PolicyAckMessage))
 		if err != nil {
 			a1pLog.Warn(err)
@@ -182,6 +194,7 @@ func (a *a1pClient) outgoingMsgDispatcher(ctx context.Context, msg *stream.SBStr
 }
 
 func (a *a1pClient) forwardResponseMsg(msg interface{}, messageType stream.A1SBIMessageType, rpcType stream.A1SBIRPCType) {
+	a1pLog.Info("Forwarding response message")
 	sbMessage := &stream.SBStreamMessage{
 		TargetXAppID:     a.targetXAppID,
 		A1SBIMessageType: messageType,

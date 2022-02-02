@@ -58,7 +58,7 @@ func (m *manager) Run(ctx context.Context) error {
 }
 
 func (m *manager) watchSubStore(ctx context.Context) error {
-	log.Info("Start watching subscription store")
+	log.Info("Start watching subscription store at southbound manager")
 	ch := make(chan store.Event)
 	go m.subStoreListener(ctx, ch)
 	err := m.subStore.Watch(ctx, ch)

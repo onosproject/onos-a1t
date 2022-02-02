@@ -7,11 +7,31 @@ package controller
 import (
 	"context"
 	"fmt"
-
+	"github.com/onosproject/onos-a1t/pkg/rnib"
 	"github.com/onosproject/onos-a1t/pkg/store"
+	"github.com/onosproject/onos-a1t/pkg/stream"
+	"github.com/onosproject/onos-lib-go/pkg/logging"
 
 	a1einbi "github.com/onosproject/onos-a1t/pkg/northbound/a1ap/enrichment_information"
 )
+
+var logA1EI = logging.GetLogger("controller", "a1ei")
+
+func NewA1EIController(nonRTRICURL string, subscriptionStore store.Store, eijobsStore store.Store, rnibClient rnib.TopoClient, streamBroker stream.Broker) A1EIController {
+	nbiClient, err := a1einbi.NewClientWithResponses(nonRTRICURL)
+	if err != nil {
+		logA1EI.Fatal(err)
+	}
+
+	return &a1eiController{
+		nonRTRICURL:       nonRTRICURL,
+		eijobsStore:       eijobsStore,
+		subscriptionStore: subscriptionStore,
+		rnibClient:        rnibClient,
+		nbiClient:         nbiClient,
+		streamBroker:      streamBroker,
+	}
+}
 
 type A1EIController interface {
 	HandleGetEIJobTypes(ctx context.Context) (*[]string, error)
@@ -19,27 +39,20 @@ type A1EIController interface {
 	HandleEIJobDelete(ctx context.Context, eiJobID string) error
 	HandleEIJobNotify(ctx context.Context, eiJobID string, eiJobObject map[string]interface{}) error
 	HandleGetEIJobStatus(ctx context.Context, eiJobID string) (string, error)
+	Receiver(ctx context.Context) error
 }
 
 type a1eiController struct {
 	nonRTRICURL       string
 	eijobsStore       store.Store
 	subscriptionStore store.Store
+	rnibClient        rnib.TopoClient
 	nbiClient         a1einbi.ClientWithResponsesInterface
+	streamBroker      stream.Broker
 }
 
-func NewA1EIController(nonRTRICURL string, subscriptionStore store.Store, eijobsStore store.Store) A1EIController {
-	nbiClient, err := a1einbi.NewClientWithResponses(nonRTRICURL)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	return &a1eiController{
-		nonRTRICURL:       nonRTRICURL,
-		eijobsStore:       eijobsStore,
-		subscriptionStore: subscriptionStore,
-		nbiClient:         nbiClient,
-	}
+func (a1ei *a1eiController) Receiver(ctx context.Context) error {
+	panic("implement me")
 }
 
 func (a1ei *a1eiController) HandleGetEIJobTypes(ctx context.Context) (*[]string, error) {

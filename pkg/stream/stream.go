@@ -71,8 +71,8 @@ func (d *directionalStreamWriter) Close() {
 }
 
 func (d *directionalStreamWriter) Send(message *SBStreamMessage) error {
-	d.mu.Lock()
-	defer d.mu.Unlock()
+	d.mu.RLock()
+	defer d.mu.RUnlock()
 	if d.closed {
 		return io.EOF
 	}

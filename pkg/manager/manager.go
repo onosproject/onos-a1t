@@ -43,20 +43,28 @@ type Manager struct {
 	subscriptionStore store.Store
 	policyStore       store.Store
 	eijobsStore       store.Store
-	rnibClient        rnib.Client
+	rnibClient        rnib.TopoClient
 }
 
 func NewManager(config Config) (*Manager, error) {
-
 	subscriptionStore := store.NewStore()
 	policyStore := store.NewStore()
 	eijobsStore := store.NewStore()
 
-	broker := controller.NewBroker(config.NonRTRICURL, subscriptionStore, policyStore, eijobsStore)
+	rnibClient, err := rnib.NewClient()
+	if err != nil {
+		return nil, err
+	}
 
 	streamBroker := stream.NewBroker()
 
-	subManager, err := subs.NewSubscriptionManager(subscriptionStore)
+	broker := controller.NewBroker(config.NonRTRICURL, subscriptionStore, eijobsStore, rnibClient, streamBroker)
+	err = broker.Run(context.Background())
+	if err != nil {
+		return nil, err
+	}
+
+	subManager, err := subs.NewSubscriptionManager(subscriptionStore, policyStore, eijobsStore)
 	if err != nil {
 		return nil, err
 	}
@@ -64,11 +72,6 @@ func NewManager(config Config) (*Manager, error) {
 	sbManager := southbound.NewSouthboundManager(streamBroker, subscriptionStore)
 
 	restServer, err := nbirest.NewRestServer(config.BaseURL, broker)
-	if err != nil {
-		return nil, err
-	}
-
-	rnibClient, err := rnib.NewClient()
 	if err != nil {
 		return nil, err
 	}

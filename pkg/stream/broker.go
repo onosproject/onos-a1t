@@ -18,7 +18,8 @@ type Broker interface {
 	Close(id ID)
 	AddStream(ctx context.Context, id ID)
 	Send(id ID, message *SBStreamMessage) error
-	Watch(id ID, ch chan *SBStreamMessage) error
+	Watch(id ID, ch chan *SBStreamMessage, watcherID uuid.UUID) error
+	DeleteWatcher(id ID, watcherID uuid.UUID)
 	Print()
 }
 
@@ -57,25 +58,33 @@ func (b *broker) AddStream(ctx context.Context, id ID) {
 	_, ok := b.streams[id]
 	if ok {
 		logBroker.Warnf("Stream for %v already exists", id)
+		return
 	}
 	stream := NewDirectionalStream(id)
 	b.streams[id] = stream
 	b.watchers[id] = make(map[uuid.UUID]chan *SBStreamMessage)
 
-	go func() {
+	go func(m *sync.RWMutex) {
 		for {
 			msg, err := stream.Recv(ctx)
 			if err != nil {
 				logBroker.Warnf("Forwarding channel closed: %v", err)
 				return
 			}
-			b.mu.Lock()
+			m.Lock()
+			logBroker.Infof("watchers: %v", b.watchers)
 			for _, v := range b.watchers[id] {
-				v <- msg
+				logBroker.Infof("Send %v to watcher %v", msg, v)
+				select {
+				case v <- msg:
+					logBroker.Infof("Sent %v to watcher %v", msg, v)
+				default:
+					logBroker.Infof("Failed to send %v on %v", msg, v)
+				}
 			}
-			b.mu.Unlock()
+			m.Unlock()
 		}
-	}()
+	}(&b.mu)
 }
 
 func (b *broker) Close(id ID) {
@@ -93,13 +102,16 @@ func (b *broker) Close(id ID) {
 }
 
 func (b *broker) Send(id ID, message *SBStreamMessage) error {
-	b.mu.Lock()
-	defer b.mu.Unlock()
+	logBroker.Infof("Sending message id: %v", id)
+	b.mu.RLock()
+	defer b.mu.RUnlock()
+	logBroker.Infof("Start Sending message id: %v", id)
 	return b.streams[id].Send(message)
 }
 
-func (b *broker) Watch(id ID, ch chan *SBStreamMessage) error {
-	watcherID := uuid.New()
+func (b *broker) Watch(id ID, ch chan *SBStreamMessage, watcherID uuid.UUID) error {
+	logBroker.Infof("Watching message id: %v", id)
+	logBroker.Infof("Add watcher ID %v: %v", watcherID, id)
 	b.mu.Lock()
 	defer b.mu.Unlock()
 	if _, ok := b.streams[id]; !ok {
@@ -107,4 +119,14 @@ func (b *broker) Watch(id ID, ch chan *SBStreamMessage) error {
 	}
 	b.watchers[id][watcherID] = ch
 	return nil
+}
+
+func (b *broker) DeleteWatcher(id ID, watcherID uuid.UUID) {
+	logBroker.Infof("deleting watcher ID %v: watcher ID %v", id, watcherID)
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	logBroker.Infof("Delete watcherID: %v, watchers", watcherID, b.watchers)
+	close(b.watchers[id][watcherID])
+	delete(b.watchers[id], watcherID)
+	logBroker.Infof("Deleted watcherID: %v, watchers", watcherID, b.watchers)
 }
