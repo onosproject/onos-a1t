@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2022-present Open Networking Foundation <info@opennetworking.org>
+//
+// SPDX-License-Identifier: LicenseRef-ONF-Member-Only-1.0
+
 package xapp
 
 import (
