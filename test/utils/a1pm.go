@@ -5,21 +5,24 @@
 package utils
 
 import (
-	"strings"
+	"encoding/json"
 
 	"github.com/santhosh-tekuri/jsonschema/v5"
 )
 
-func ValidateSchema(object, schemaObject string) error {
-	compiler := jsonschema.NewCompiler()
-	if err := compiler.AddResource("schema.json", strings.NewReader(schemaObject)); err != nil {
-		return err
-	}
-	schema, err := compiler.Compile("schema.json")
+func ValidateSchema(instance, schema string) error {
+
+	sch, err := jsonschema.CompileString("schema.json", schema)
 	if err != nil {
 		return err
 	}
-	if err := schema.Validate(object); err != nil {
+
+	var v interface{}
+	if err := json.Unmarshal([]byte(instance), &v); err != nil {
+		return err
+	}
+
+	if err = sch.Validate(v); err != nil {
 		return err
 	}
 

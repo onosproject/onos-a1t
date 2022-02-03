@@ -33,6 +33,10 @@ func (s *TestSuite) SetupTestSuite(c *input.Context) error {
 	if err != nil {
 		return err
 	}
+	err = utils.WriteFile("/tmp/config.json", utils.ConfigJSON)
+	if err != nil {
+		return err
+	}
 
 	sdran, err := utils.CreateSdranRelease(c)
 	if err != nil {

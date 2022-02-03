@@ -39,8 +39,8 @@ func NewRestServer(baseURL string, controller Controller) (RestServer, error) {
 }
 
 func (r *server) Start() {
-	r.echo.Logger.Fatal(r.echo.Start(r.baseURL))
-
+	// r.echo.Logger.Fatal(r.echo.Start(r.baseURL))
+	r.echo.Start(r.baseURL)
 }
 
 func (r *server) Stop() {
