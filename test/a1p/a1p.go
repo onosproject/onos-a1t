@@ -130,5 +130,6 @@ func (s *TestSuite) TestA1TPMService(t *testing.T) {
 
 	t.Log("A1T Policy Management suite test finished")
 
-	a1txapp.Uninstall()
+	err = a1txapp.Uninstall()
+	assert.NoError(t, err, "could not uninstall a1txapp %v", err)
 }
