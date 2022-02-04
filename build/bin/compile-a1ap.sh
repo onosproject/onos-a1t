@@ -1,5 +1,9 @@
 #!/bin/bash
 
+# SPDX-FileCopyrightText: 2019-present Open Networking Foundation <info@opennetworking.org>
+#
+# SPDX-License-Identifier: Apache-2.0
+
 export ONOS_ROOT=$GOPATH/src/github.com/onosproject
 export OAPI_SPEC_VALIDATOR_VERSION=0.3.1
 export OAPI_CODEGEN_VERSION=1.6.6

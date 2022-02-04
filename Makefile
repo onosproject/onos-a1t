@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2019-present Open Networking Foundation <info@opennetworking.org>
+#
+# SPDX-License-Identifier: Apache-2.0
+
 .PHONY: build
 
 OAPI_CODEGEN_VERSION := v1.9.0
@@ -28,7 +32,7 @@ openapi-spec-validator:
 	openapi-spec-validator || ( cd .. && pip3 install openapi-spec-validator==${OAPI_SPEC_VALIDATOR_VERSION})
 
 license_check_a1t:  # @HELP examine and ensure license headers exist
-	./build/build-tools/licensing/boilerplate.py -v --rootdir=${CURDIR} --skipped-dir pkg/northbound/a1ap --skipped-dir api --skipped-dir build --boilerplate LicenseRef-ONF-Member-Only-1.0
+	./build/build-tools/licensing/boilerplate.py -v --rootdir=${CURDIR} --skipped-dir pkg/northbound/a1ap --skipped-dir api --skipped-dir build --boilerplate SPDX-Apache-2.0
 
 buflint: #@HELP run the "buf check lint" command on the proto files in 'api'
 	docker run -it -v `pwd`:/go/src/github.com/onosproject/onos-a1t \
