@@ -71,14 +71,3 @@ publish: # @HELP publish version on github and dockerhub
 jenkins-publish: jenkins-tools # @HELP Jenkins calls this to publish artifacts
 	./build/bin/push-images
 	./build/build-tools/release-merge-commit
-
-
-protos: # @HELP build a1t golang protobuffer (TEMP) # TODO move .proto to onos-api
-protos:
-	go get github.com/gogo/protobuf/proto
-	go get github.com/gogo/protobuf/gogoproto
-	go get github.com/gogo/protobuf/protoc-gen-gofast
-	go get github.com/gogo/protobuf/protoc-gen-gogofaster
-	go_import_paths="Mgoogle/protobuf/struct.proto=github.com/gogo/protobuf/types"
-	proto_path="./api/southbound/:${GOPATH}/src/github.com/gogo/protobuf/protobuf:${GOPATH}/src/github.com/gogo/protobuf:${GOPATH}/src"
-	protoc --proto_path=$proto_path --gogofaster_out=$go_import_paths,import_path=onos/a1t,plugins=grpc:./pkg/southbound/a1t/ a1t.proto
