@@ -41,7 +41,7 @@ func NewManager(baseURL, nearRTRicBaseURL string) (*Manager, error) {
 }
 
 func (m *Manager) start() error {
-	m.restserver.Start()
+	go m.restserver.Start()
 	return nil
 }
 

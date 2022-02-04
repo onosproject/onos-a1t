@@ -1,0 +1,19 @@
+# SPDX-FileCopyrightText: 2020-present Open Networking Foundation <info@opennetworking.org>
+#
+# SPDX-License-Identifier: LicenseRef-ONF-Member-Only-1.0
+
+apiVersion: v2
+name: onos-a1txapp
+description: ONOS A1T xAPP
+kubeVersion: ">=1.17.0"
+type: application
+version: 0.8.0
+appVersion: v0.2.13
+keywords:
+  - onos
+  - sdn
+  - ric
+home: https://onosproject.org
+maintainers:
+  - name: ONOS Support
+    email: support@opennetworking.org

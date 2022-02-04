@@ -5,6 +5,7 @@
 build/_output/*
 build/build-tools
 **/_output
+**/build-tools
 *.DS_Store
 coverage.txt
 *.coverprofile
