@@ -16,7 +16,7 @@ import (
 )
 
 var (
-	waitPeriod = time.Duration(5)
+	waitPeriod = time.Duration(0)
 )
 
 func startKpmSm(t *testing.T) *helm.HelmRelease {
@@ -26,17 +26,13 @@ func startKpmSm(t *testing.T) *helm.HelmRelease {
 }
 
 // TestA1TPMService is the function for Helmit-based integration test
-//How-to run
-//helmit -n a1t test ./cmd/onos-a1t-test  --secret "sd-ran-username=onfstaff" --secret "sd-ran-password=sooW3beeM4taIieJ9vo3hquuch" --suite a1pm --context ./test/utils/charts/
 func (s *TestSuite) TestA1TPMService(t *testing.T) {
 
 	t.Log("A1T Policy Management suite test started")
 
 	mgr, err := nonrtric.NewManager(utils.NonRTRicBaseURL, utils.NearRTRicBaseURL)
 	assert.NoError(t, err)
-
 	mgr.Run()
-
 	control := mgr.GetController()
 
 	ctx, cancel := context.WithTimeout(context.Background(), utils.TestTimeout)
@@ -45,8 +41,8 @@ func (s *TestSuite) TestA1TPMService(t *testing.T) {
 	// 1. Before starting xApp with subscription to policy typeID
 	policyTypes, err := control.A1PMGetPolicytypes(ctx)
 	assert.NoError(t, err)
-	assert.EqualValues(t, []string{}, policyTypes)
-	t.Log("A1T Policy Management: Expected empty policy type IDs passed: ", policyTypes)
+	assert.ElementsMatch(t, []string{}, policyTypes)
+	t.Log("A1T Policy Management: Expected empty policy type IDs passed")
 
 	time.Sleep(waitPeriod * time.Second)
 
@@ -57,26 +53,26 @@ func (s *TestSuite) TestA1TPMService(t *testing.T) {
 	// 3. After starting xApp with subscription to policy typeID
 	policyTypes, err = control.A1PMGetPolicytypes(ctx)
 	assert.NoError(t, err)
-	assert.EqualValues(t, utils.ExpectedA1PMTypeIDs, policyTypes)
-	t.Log("A1T Policy Management: Expected PM type IDs passed: ", policyTypes)
+	assert.ElementsMatch(t, utils.ExpectedA1PMTypeIDs, policyTypes)
+	t.Log("A1T Policy Management: Expected PM type IDs passed")
 
 	time.Sleep(waitPeriod * time.Second)
 
 	// 4. Retrieves policy typeID schema
-	// policySchema, err := control.A1PMGetPolicytypesPolicyTypeId(ctx, utils.PolicyTypeId)
+	policySchema, err := control.A1PMGetPolicytypesPolicyTypeId(ctx, utils.PolicyTypeId)
 	// t.Log("Received policySchema ", policySchema)
-	// assert.NoError(t, err)
+	assert.NoError(t, err)
 
 	// 5. Validates policy typeID schema
-	// err = utils.ValidateSchema(utils.ExpectedPolicyObject, policySchema)
-	// assert.NoError(t, err)
-	// t.Log("A1T Policy Management: Expected policy type schema passed")
+	err = utils.ValidateSchema(utils.ExpectedPolicyObject, policySchema)
+	assert.NoError(t, err)
+	t.Log("A1T Policy Management: Expected policy type schema passed")
 
 	// 6. Query policy IDs with a particular policy typeID
 	existingPolicyIDs, err := control.A1PMGetPolicytypesPolicyTypeIdPolicies(ctx, utils.PolicyTypeId)
 	assert.NoError(t, err)
-	assert.EqualValues(t, []string{"1", "2"}, existingPolicyIDs)
-	t.Log("A1T Policy Management: Expected empty policy IDs for typeID passed: ", existingPolicyIDs)
+	assert.ElementsMatch(t, []string{"1", "2"}, existingPolicyIDs)
+	t.Log("A1T Policy Management: Expected policy IDs for typeID passed")
 
 	time.Sleep(waitPeriod * time.Second)
 
@@ -90,7 +86,7 @@ func (s *TestSuite) TestA1TPMService(t *testing.T) {
 	// 8. Query policy IDs with a particular policy typeID (must be list with expected policy ID)
 	PolicyIDs, err := control.A1PMGetPolicytypesPolicyTypeIdPolicies(ctx, utils.PolicyTypeId)
 	assert.NoError(t, err)
-	assert.EqualValues(t, utils.ExpectedA1PMPolicyIDs, PolicyIDs)
+	assert.ElementsMatch(t, utils.ExpectedA1PMPolicyIDs, PolicyIDs)
 	t.Log("A1T Policy Management: Expected policy IDs for typeID passed")
 
 	time.Sleep(waitPeriod * time.Second)
@@ -123,8 +119,8 @@ func (s *TestSuite) TestA1TPMService(t *testing.T) {
 	// 10. Query policy IDs with a particular policy typeID
 	emptyPolicyIDs, err := control.A1PMGetPolicytypesPolicyTypeIdPolicies(ctx, utils.PolicyTypeId)
 	assert.NoError(t, err)
-	assert.EqualValues(t, []string{"1", "2"}, emptyPolicyIDs)
-	t.Log("A1T Policy Management: Expected empty policy IDs for typeID passed")
+	assert.ElementsMatch(t, []string{"1", "2"}, emptyPolicyIDs)
+	t.Log("A1T Policy Management: Expected policy IDs for typeID passed")
 
 	time.Sleep(waitPeriod * time.Second)
 
@@ -132,4 +128,5 @@ func (s *TestSuite) TestA1TPMService(t *testing.T) {
 
 	err = a1txapp.Uninstall()
 	assert.NoError(t, err, "could not uninstall a1txapp %v", err)
+	t.Log("A1T xApp stopped")
 }

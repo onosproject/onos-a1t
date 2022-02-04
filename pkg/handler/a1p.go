@@ -6,10 +6,11 @@ package handler
 
 import (
 	"encoding/json"
+	"net/http"
+
 	"github.com/onosproject/onos-a1t/pkg/utils"
 	"github.com/onosproject/onos-lib-go/pkg/errors"
 	"github.com/onosproject/onos-lib-go/pkg/logging"
-	"net/http"
 
 	"github.com/labstack/echo/v4"
 
@@ -40,12 +41,17 @@ func (a1pw *a1pWraper) GetPolicytypes(ctx echo.Context) error {
 
 // (GET /policytypes/{policyTypeId})
 func (a1pw *a1pWraper) GetPolicytypesPolicyTypeId(ctx echo.Context, policyTypeId a1p.PolicyTypeId) error {
-	policyType, err := a1pw.a1pController.HandleGetPolicytypesPolicyTypeId(ctx.Request().Context(), string(policyTypeId))
+	policyTypeSchema, err := a1pw.a1pController.HandleGetPolicytypesPolicyTypeId(ctx.Request().Context(), string(policyTypeId))
 	if err != nil {
 		a1pLog.Error(err)
 		return ctx.JSONPretty(http.StatusBadRequest, err.Error(), "  ")
 	}
-	return ctx.JSONPretty(http.StatusOK, policyType, "  ")
+
+	policyTypeObject := a1p.PolicyTypeObject{
+		PolicySchema: policyTypeSchema,
+	}
+
+	return ctx.JSONPretty(http.StatusOK, policyTypeObject, "  ")
 }
 
 // (GET /policytypes/{policyTypeId}/policies)

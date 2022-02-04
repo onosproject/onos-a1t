@@ -37,7 +37,6 @@ func (c *controller) A1PMGetPolicytypesPolicyTypeId(ctx context.Context, policyT
 	if err != nil {
 		return "", err
 	}
-
 	policySchema, err := json.Marshal(response.JSON200.PolicySchema)
 	if err != nil {
 		return "", err

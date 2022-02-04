@@ -23,9 +23,9 @@ helm repo add sdran --username **** --password **** https://sdrancharts.onosproj
 helm repo update
 
 ## Install Atomix Cluster
-helm install -n kube-system atomix-controller atomix/atomix-controller --wait
-helm install -n kube-system atomix-raft-storage atomix/atomix-raft-storage --wait
-helm install -n kube-system onos-operator onos/onos-operator --wait
+helm install atomix-controller atomix/atomix-controller -n kube-system --wait --version 0.6.8
+helm install atomix-raft-storage atomix/atomix-raft-storage -n kube-system --wait --version 0.1.15
+helm install onos-operator onos/onos-operator -n kube-system --wait --version 0.4.14 
 
 ## Setup a test namespace and bring up CLI and topo
 kubectl create namespace test
@@ -43,4 +43,4 @@ kubectl -n test logs -f deploy/onos-a1txapp -c onos-a1txapp
 ## As needed, clean the environment
 kubectl delete ns test
 helm uninstall -n kube-system onos-operator atomix-raft-storage atomix-controller
-kind delete cluster kind
+kind delete cluster
