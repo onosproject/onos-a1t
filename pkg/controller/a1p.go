@@ -10,6 +10,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/google/uuid"
+	policystatusv2 "github.com/onosproject/onos-a1-dm/go/policy_status/v2"
 	"github.com/onosproject/onos-a1t/pkg/rnib"
 	"github.com/onosproject/onos-a1t/pkg/store"
 	"github.com/onosproject/onos-a1t/pkg/stream"
@@ -38,7 +39,7 @@ type A1PController interface {
 	HandlePolicyDelete(ctx context.Context, policyID, policyTypeID string) error
 	HandlePolicyUpdate(ctx context.Context, policyID, policyTypeID string, params map[string]string, policyObject map[string]interface{}) error
 	HandleGetPolicyTypes(ctx context.Context) []string
-	HandleGetPolicytypesPolicyTypeId(ctx context.Context, policyTypeID string) (map[string]interface{}, error)
+	HandleGetPolicytypesPolicyTypeId(ctx context.Context, policyTypeID string) (map[string]interface{}, map[string]interface{}, error)
 	HandleGetPolicytypesPolicyTypeIdPolicies(ctx context.Context, policyTypeID string) ([]string, error)
 	HandleGetPolicy(ctx context.Context, policyID, policyTypeID string) (map[string]interface{}, error)
 	HandleGetPolicyStatus(ctx context.Context, policyID, policyTypeID string) (map[string]interface{}, error)
@@ -572,10 +573,10 @@ func (a *a1pController) HandleGetPolicyTypes(ctx context.Context) []string {
 	return results
 }
 
-func (a *a1pController) HandleGetPolicytypesPolicyTypeId(ctx context.Context, policyTypeID string) (map[string]interface{}, error) {
+func (a *a1pController) HandleGetPolicytypesPolicyTypeId(ctx context.Context, policyTypeID string) (map[string]interface{}, map[string]interface{}, error) {
 	schema, ok := policyschemas.PolicySchemas[policyTypeID]
 	if !ok {
-		return nil, errors.NewNotSupported("PolicyTypeID %v is not supported - is it defined in onos-a1-dm?")
+		return nil, nil, errors.NewNotSupported("PolicyTypeID %v is not supported - is it defined in onos-a1-dm?")
 	}
 
 	policyTypes, err := a.rnibClient.GetPolicyTypes(ctx)
@@ -584,10 +585,12 @@ func (a *a1pController) HandleGetPolicytypesPolicyTypeId(ctx context.Context, po
 	}
 	for k := range policyTypes {
 		if string(k) == policyTypeID {
-			return utils.ConvertStringFormatJsonToMap(schema), nil
+			typeSchema := utils.ConvertStringFormatJsonToMap(schema)
+			statusSchema := utils.ConvertStringFormatJsonToMap(policystatusv2.RawSchema)
+			return typeSchema, statusSchema, nil
 		}
 	}
-	return nil, errors.NewNotFound("Policy Type ID %v not found", policyTypeID)
+	return nil, nil, errors.NewNotFound("Policy Type ID %v not found", policyTypeID)
 }
 
 func (a *a1pController) HandleGetPolicytypesPolicyTypeIdPolicies(ctx context.Context, policyTypeID string) ([]string, error) {

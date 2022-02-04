@@ -41,7 +41,7 @@ func (a1pw *a1pWraper) GetPolicytypes(ctx echo.Context) error {
 
 // (GET /policytypes/{policyTypeId})
 func (a1pw *a1pWraper) GetPolicytypesPolicyTypeId(ctx echo.Context, policyTypeId a1p.PolicyTypeId) error {
-	policyTypeSchema, err := a1pw.a1pController.HandleGetPolicytypesPolicyTypeId(ctx.Request().Context(), string(policyTypeId))
+	policyTypeSchema, statusSchema, err := a1pw.a1pController.HandleGetPolicytypesPolicyTypeId(ctx.Request().Context(), string(policyTypeId))
 	if err != nil {
 		a1pLog.Error(err)
 		return ctx.JSONPretty(http.StatusBadRequest, err.Error(), "  ")
@@ -49,6 +49,7 @@ func (a1pw *a1pWraper) GetPolicytypesPolicyTypeId(ctx echo.Context, policyTypeId
 
 	policyTypeObject := a1p.PolicyTypeObject{
 		PolicySchema: policyTypeSchema,
+		StatusSchema: (*a1p.JsonSchema)(&statusSchema),
 	}
 
 	return ctx.JSONPretty(http.StatusOK, policyTypeObject, "  ")
