@@ -19,7 +19,7 @@ var (
 	waitPeriod = time.Duration(0)
 )
 
-func startKpmSm(t *testing.T) *helm.HelmRelease {
+func startA1TXapp(t *testing.T) *helm.HelmRelease {
 	a1txapp := utils.CreateA1TXapp(t, "onos-a1txapp")
 	t.Log("A1T xApp started")
 	return a1txapp
@@ -47,7 +47,7 @@ func (s *TestSuite) TestA1TPMService(t *testing.T) {
 	time.Sleep(waitPeriod * time.Second)
 
 	// 2. Start xApp with a1t NBI enabled for policy management
-	a1txapp := startKpmSm(t)
+	a1txapp := startA1TXapp(t)
 	time.Sleep(waitPeriod * time.Second)
 
 	// 3. After starting xApp with subscription to policy typeID
