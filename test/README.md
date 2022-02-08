@@ -28,7 +28,7 @@ cd sdran-helm-charts && make deps
 ```bash
 helm repo add atomix https://charts.atomix.io
 helm repo add onosproject https://charts.onosproject.org
-helm repo add sdran --username **** --password **** https://sdrancharts.onosproject.org
+helm repo add sdran https://sdrancharts.onosproject.org
 helm repo update
 ```
 
