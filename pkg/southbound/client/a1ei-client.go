@@ -178,17 +178,8 @@ func (a *a1eiClient) incomingEIQueryForwarder(ctx context.Context) {
 				a1eiLog.Warn(err)
 				return
 			}
-			sbMessage := &stream.SBStreamMessage{
-				TargetXAppID:     a.targetXAppID,
-				A1SBIMessageType: stream.EIRequestMessage,
-				A1Service:        stream.EnrichmentInformation,
-				A1SBIRPCType:     stream.EIQuery,
-				Payload:          msg,
-			}
-			nbID := stream.ID{
-				SrcEndpointID:  stream.GetEndpointIDWithTargetXAppID(a.targetXAppID, stream.EnrichmentInformation),
-				DestEndpointID: "a1p-controller",
-			}
+			sbMessage := stream.NewSBStreamMessage(a.targetXAppID, stream.EIRequestMessage, stream.EIQuery, stream.EnrichmentInformation, msg)
+			_, nbID := stream.GetStreamID(stream.A1EIController, stream.GetEndpointIDWithTargetXAppID(a.targetXAppID, stream.EnrichmentInformation))
 			err = a.streamBroker.Send(nbID, sbMessage)
 			if err != nil {
 				a1eiLog.Warn(err)
@@ -218,17 +209,8 @@ func (a *a1eiClient) incomingEIJobSetupForwarder(ctx context.Context) {
 				a1eiLog.Warn(err)
 				return
 			}
-			sbMessage := &stream.SBStreamMessage{
-				TargetXAppID:     a.targetXAppID,
-				A1SBIMessageType: stream.EIRequestMessage,
-				A1Service:        stream.EnrichmentInformation,
-				A1SBIRPCType:     stream.EIJobSetup,
-				Payload:          msg,
-			}
-			nbID := stream.ID{
-				SrcEndpointID:  stream.GetEndpointIDWithTargetXAppID(a.targetXAppID, stream.EnrichmentInformation),
-				DestEndpointID: "a1p-controller",
-			}
+			sbMessage := stream.NewSBStreamMessage(a.targetXAppID, stream.EIRequestMessage, stream.EIJobSetup, stream.EnrichmentInformation, msg)
+			_, nbID := stream.GetStreamID(stream.A1EIController, stream.GetEndpointIDWithTargetXAppID(a.targetXAppID, stream.EnrichmentInformation))
 			err = a.streamBroker.Send(nbID, sbMessage)
 			if err != nil {
 				a1eiLog.Warn(err)
@@ -258,17 +240,8 @@ func (a *a1eiClient) incomingEIJobUpdateForwarder(ctx context.Context) {
 				a1eiLog.Warn(err)
 				return
 			}
-			sbMessage := &stream.SBStreamMessage{
-				TargetXAppID:     a.targetXAppID,
-				A1SBIMessageType: stream.EIRequestMessage,
-				A1Service:        stream.EnrichmentInformation,
-				A1SBIRPCType:     stream.EIJobUpdate,
-				Payload:          msg,
-			}
-			nbID := stream.ID{
-				SrcEndpointID:  stream.GetEndpointIDWithTargetXAppID(a.targetXAppID, stream.EnrichmentInformation),
-				DestEndpointID: "a1p-controller",
-			}
+			sbMessage := stream.NewSBStreamMessage(a.targetXAppID, stream.EIRequestMessage, stream.EIJobUpdate, stream.EnrichmentInformation, msg)
+			_, nbID := stream.GetStreamID(stream.A1EIController, stream.GetEndpointIDWithTargetXAppID(a.targetXAppID, stream.EnrichmentInformation))
 			err = a.streamBroker.Send(nbID, sbMessage)
 			if err != nil {
 				a1eiLog.Warn(err)
@@ -298,17 +271,8 @@ func (a *a1eiClient) incomingEIJobDeleteForwarder(ctx context.Context) {
 				a1eiLog.Warn(err)
 				return
 			}
-			sbMessage := &stream.SBStreamMessage{
-				TargetXAppID:     a.targetXAppID,
-				A1SBIMessageType: stream.EIRequestMessage,
-				A1Service:        stream.EnrichmentInformation,
-				A1SBIRPCType:     stream.EIJobDelete,
-				Payload:          msg,
-			}
-			nbID := stream.ID{
-				SrcEndpointID:  stream.GetEndpointIDWithTargetXAppID(a.targetXAppID, stream.EnrichmentInformation),
-				DestEndpointID: "a1p-controller",
-			}
+			sbMessage := stream.NewSBStreamMessage(a.targetXAppID, stream.EIRequestMessage, stream.EIJobDelete, stream.EnrichmentInformation, msg)
+			_, nbID := stream.GetStreamID(stream.A1EIController, stream.GetEndpointIDWithTargetXAppID(a.targetXAppID, stream.EnrichmentInformation))
 			err = a.streamBroker.Send(nbID, sbMessage)
 			if err != nil {
 				a1eiLog.Warn(err)
@@ -338,17 +302,8 @@ func (a *a1eiClient) incomingEIJobStatusQueryForwarder(ctx context.Context) {
 				a1eiLog.Warn(err)
 				return
 			}
-			sbMessage := &stream.SBStreamMessage{
-				TargetXAppID:     a.targetXAppID,
-				A1SBIMessageType: stream.EIRequestMessage,
-				A1Service:        stream.EnrichmentInformation,
-				A1SBIRPCType:     stream.EIJobStatusQuery,
-				Payload:          msg,
-			}
-			nbID := stream.ID{
-				SrcEndpointID:  stream.GetEndpointIDWithTargetXAppID(a.targetXAppID, stream.EnrichmentInformation),
-				DestEndpointID: "a1p-controller",
-			}
+			sbMessage := stream.NewSBStreamMessage(a.targetXAppID, stream.EIRequestMessage, stream.EIJobStatusQuery, stream.EnrichmentInformation, msg)
+			_, nbID := stream.GetStreamID(stream.A1EIController, stream.GetEndpointIDWithTargetXAppID(a.targetXAppID, stream.EnrichmentInformation))
 			err = a.streamBroker.Send(nbID, sbMessage)
 			if err != nil {
 				a1eiLog.Warn(err)
@@ -359,11 +314,7 @@ func (a *a1eiClient) incomingEIJobStatusQueryForwarder(ctx context.Context) {
 
 func (a *a1eiClient) runOutgoingMsgDispatcher(ctx context.Context) error {
 	msgCh := make(chan *stream.SBStreamMessage)
-	sbID := stream.ID{
-		SrcEndpointID:  "a1ei-controller",
-		DestEndpointID: stream.GetEndpointIDWithTargetXAppID(a.targetXAppID, stream.EnrichmentInformation),
-	}
-
+	sbID, _ := stream.GetStreamID(stream.A1EIController, stream.GetEndpointIDWithTargetXAppID(a.targetXAppID, stream.EnrichmentInformation))
 	watcherID := uuid.New()
 	err := a.streamBroker.Watch(sbID, msgCh, watcherID)
 	if err != nil {
@@ -424,17 +375,8 @@ func (a *a1eiClient) outgoingMsgDispatcher(ctx context.Context, msg *stream.SBSt
 }
 
 func (a *a1eiClient) forwardResponseMsg(msg interface{}, messageType stream.A1SBIMessageType, rpcType stream.A1SBIRPCType) {
-	sbMessage := &stream.SBStreamMessage{
-		TargetXAppID:     a.targetXAppID,
-		A1SBIMessageType: messageType,
-		A1Service:        stream.EnrichmentInformation,
-		A1SBIRPCType:     rpcType,
-		Payload:          msg,
-	}
-	nbID := stream.ID{
-		SrcEndpointID:  stream.GetEndpointIDWithTargetXAppID(a.targetXAppID, stream.EnrichmentInformation),
-		DestEndpointID: "a1p-controller",
-	}
+	sbMessage := stream.NewSBStreamMessage(a.targetXAppID, messageType, rpcType, stream.EnrichmentInformation, msg)
+	_, nbID := stream.GetStreamID(stream.A1EIController, stream.GetEndpointIDWithTargetXAppID(a.targetXAppID, stream.EnrichmentInformation))
 	err := a.streamBroker.Send(nbID, sbMessage)
 	if err != nil {
 		a1pLog.Warn(err)

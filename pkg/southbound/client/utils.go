@@ -34,25 +34,11 @@ func createGRPCConn(ipAddress string, port uint32) (*grpc.ClientConn, error) {
 func createStream(ctx context.Context, xAppID string, a1Service stream.A1Service, streamBroker stream.Broker) {
 	switch a1Service {
 	case stream.PolicyManagement:
-		nbID := stream.ID{
-			SrcEndpointID:  stream.GetEndpointIDWithTargetXAppID(xAppID, stream.PolicyManagement),
-			DestEndpointID: "a1p-controller",
-		}
-		sbID := stream.ID{
-			SrcEndpointID:  "a1p-controller",
-			DestEndpointID: stream.GetEndpointIDWithTargetXAppID(xAppID, stream.PolicyManagement),
-		}
+		sbID, nbID := stream.GetStreamID(stream.A1PController, stream.GetEndpointIDWithTargetXAppID(xAppID, stream.PolicyManagement))
 		streamBroker.AddStream(ctx, nbID)
 		streamBroker.AddStream(ctx, sbID)
 	case stream.EnrichmentInformation:
-		nbID := stream.ID{
-			SrcEndpointID:  stream.GetEndpointIDWithTargetXAppID(xAppID, stream.EnrichmentInformation),
-			DestEndpointID: "a1ei-controller",
-		}
-		sbID := stream.ID{
-			SrcEndpointID:  "a1ei-controller",
-			DestEndpointID: stream.GetEndpointIDWithTargetXAppID(xAppID, stream.EnrichmentInformation),
-		}
+		sbID, nbID := stream.GetStreamID(stream.A1EIController, stream.GetEndpointIDWithTargetXAppID(xAppID, stream.PolicyManagement))
 		streamBroker.AddStream(ctx, nbID)
 		streamBroker.AddStream(ctx, sbID)
 	}
@@ -61,25 +47,11 @@ func createStream(ctx context.Context, xAppID string, a1Service stream.A1Service
 func deleteStream(xAppID string, a1Service stream.A1Service, streamBroker stream.Broker) {
 	switch a1Service {
 	case stream.PolicyManagement:
-		nbID := stream.ID{
-			SrcEndpointID:  stream.GetEndpointIDWithTargetXAppID(xAppID, stream.PolicyManagement),
-			DestEndpointID: "a1p-controller",
-		}
-		sbID := stream.ID{
-			SrcEndpointID:  "a1p-controller",
-			DestEndpointID: stream.GetEndpointIDWithTargetXAppID(xAppID, stream.PolicyManagement),
-		}
+		sbID, nbID := stream.GetStreamID(stream.A1PController, stream.GetEndpointIDWithTargetXAppID(xAppID, stream.PolicyManagement))
 		streamBroker.Close(nbID)
 		streamBroker.Close(sbID)
 	case stream.EnrichmentInformation:
-		nbID := stream.ID{
-			SrcEndpointID:  stream.GetEndpointIDWithTargetXAppID(xAppID, stream.EnrichmentInformation),
-			DestEndpointID: "a1ei-controller",
-		}
-		sbID := stream.ID{
-			SrcEndpointID:  "a1ei-controller",
-			DestEndpointID: stream.GetEndpointIDWithTargetXAppID(xAppID, stream.EnrichmentInformation),
-		}
+		sbID, nbID := stream.GetStreamID(stream.A1EIController, stream.GetEndpointIDWithTargetXAppID(xAppID, stream.PolicyManagement))
 		streamBroker.Close(nbID)
 		streamBroker.Close(sbID)
 	}

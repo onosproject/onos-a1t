@@ -79,11 +79,6 @@ func (a *a1pController) subStoreListener(ctx context.Context, ch chan store.Even
 			if err != nil {
 				logA1P.Warn(err)
 			}
-		//case store.Updated:
-		//	err = a.createEventSubStoreHandler(ctx, entry)
-		//	if err != nil {
-		//		logA1P.Warn(err)
-		//	}
 		case store.Deleted:
 			err = a.deleteEventSubStoreHandler(ctx, entry)
 			if err != nil {
@@ -98,15 +93,7 @@ func (a *a1pController) createEventSubStoreHandler(ctx context.Context, entry *s
 	key := entry.Key.(store.SubscriptionKey)
 	targetXAppID := string(key.TargetXAppID)
 	msgCh := make(chan *stream.SBStreamMessage)
-	nbID := stream.ID{
-		SrcEndpointID:  stream.GetEndpointIDWithTargetXAppID(targetXAppID, stream.PolicyManagement),
-		DestEndpointID: "a1p-controller",
-	}
-	sbID := stream.ID{
-		DestEndpointID: stream.GetEndpointIDWithTargetXAppID(targetXAppID, stream.PolicyManagement),
-		SrcEndpointID:  "a1p-controller",
-	}
-
+	sbID, nbID := stream.GetStreamID(stream.A1PController, stream.GetEndpointIDWithTargetXAppID(targetXAppID, stream.PolicyManagement))
 	a.streamBroker.AddStream(ctx, nbID)
 	a.streamBroker.AddStream(ctx, sbID)
 
@@ -132,6 +119,7 @@ func (a *a1pController) createEventSubStoreHandler(ctx context.Context, entry *s
 func (a *a1pController) deleteEventSubStoreHandler(ctx context.Context, entry *store.Entry) error {
 	logA1P.Infof("Subscription store entry %v was just deleted", *entry)
 	// nothing to do with it - stream delete process should be running in southbound manager
+	// for the future, if necessary, it should have
 	return nil
 }
 
@@ -142,14 +130,6 @@ func (a *a1pController) dispatchReceivedMsg(ctx context.Context, sbMessage *stre
 		msg := sbMessage.Payload.(*a1.PolicyStatusMessage)
 		uri := msg.NotificationDestination
 		payload := msg.Message.Payload
-
-		ackSbMessage := &stream.SBStreamMessage{
-			A1SBIMessageType: stream.PolicyAckMessage,
-			TargetXAppID:     sbMessage.TargetXAppID,
-			A1Service:        stream.PolicyManagement,
-			A1SBIRPCType:     sbMessage.A1SBIRPCType,
-		}
-
 		ack := &a1.PolicyAckMessage{
 			PolicyType: msg.PolicyType,
 			PolicyId:   msg.PolicyId,
@@ -158,12 +138,7 @@ func (a *a1pController) dispatchReceivedMsg(ctx context.Context, sbMessage *stre
 			},
 			NotificationDestination: msg.NotificationDestination,
 		}
-
-		sbID := stream.ID{
-			SrcEndpointID:  "a1p-controller",
-			DestEndpointID: stream.GetEndpointIDWithTargetXAppID(sbMessage.TargetXAppID, stream.PolicyManagement),
-		}
-
+		sbID, _ := stream.GetStreamID(stream.A1PController, stream.GetEndpointIDWithTargetXAppID(sbMessage.TargetXAppID, stream.PolicyManagement))
 		resp, err := http.Post(uri, "application/json", bytes.NewBuffer(payload))
 		if err != nil {
 			ack.Message.Result = &a1.Result{
@@ -177,7 +152,7 @@ func (a *a1pController) dispatchReceivedMsg(ctx context.Context, sbMessage *stre
 			}
 		}
 		logA1P.Infof("PolicyStatus forwarding Resp: %v", resp)
-		ackSbMessage.Payload = ack
+		ackSbMessage := stream.NewSBStreamMessage(sbMessage.TargetXAppID, stream.PolicyAckMessage, sbMessage.A1SBIRPCType, stream.PolicyManagement, ack)
 		err = a.streamBroker.Send(sbID, ackSbMessage)
 		if err != nil {
 			return err
@@ -219,28 +194,11 @@ func (a *a1pController) HandlePolicyCreate(ctx context.Context, policyID, policy
 				Payload: obj,
 			},
 		}
-
 		if callbackURI, ok := params[utils.NotificationDestination]; ok {
 			reqMsg.NotificationDestination = callbackURI
 		}
-
-		sbMessage := &stream.SBStreamMessage{
-			A1SBIMessageType: stream.PolicyRequestMessage,
-			A1SBIRPCType:     stream.PolicySetup,
-			A1Service:        stream.PolicyManagement,
-			Payload:          reqMsg,
-		}
-
-		sbID := stream.ID{
-			SrcEndpointID:  "a1p-controller",
-			DestEndpointID: stream.GetEndpointIDWithTargetXAppID(targetXAppID, stream.PolicyManagement),
-		}
-
-		nbID := stream.ID{
-			DestEndpointID: "a1p-controller",
-			SrcEndpointID:  stream.GetEndpointIDWithTargetXAppID(targetXAppID, stream.PolicyManagement),
-		}
-
+		sbID, nbID := stream.GetStreamID(stream.A1PController, stream.GetEndpointIDWithTargetXAppID(targetXAppID, stream.PolicyManagement))
+		sbMessage := stream.NewSBStreamMessage(targetXAppID, stream.PolicyRequestMessage, stream.PolicySetup, stream.PolicyManagement, reqMsg)
 		respCh := make(chan *stream.SBStreamMessage)
 		timerCh := make(chan bool, 1)
 
@@ -341,24 +299,8 @@ func (a *a1pController) HandlePolicyDelete(ctx context.Context, policyID, policy
 				},
 			},
 		}
-
-		sbMessage := &stream.SBStreamMessage{
-			A1SBIMessageType: stream.PolicyRequestMessage,
-			A1SBIRPCType:     stream.PolicyDelete,
-			A1Service:        stream.PolicyManagement,
-			Payload:          reqMsg,
-		}
-
-		sbID := stream.ID{
-			SrcEndpointID:  "a1p-controller",
-			DestEndpointID: stream.GetEndpointIDWithTargetXAppID(targetXAppID, stream.PolicyManagement),
-		}
-
-		nbID := stream.ID{
-			DestEndpointID: "a1p-controller",
-			SrcEndpointID:  stream.GetEndpointIDWithTargetXAppID(targetXAppID, stream.PolicyManagement),
-		}
-
+		sbID, nbID := stream.GetStreamID(stream.A1PController, stream.GetEndpointIDWithTargetXAppID(targetXAppID, stream.PolicyManagement))
+		sbMessage := stream.NewSBStreamMessage(targetXAppID, stream.PolicyResultMessage, stream.PolicyDelete, stream.PolicyManagement, reqMsg)
 		respCh := make(chan *stream.SBStreamMessage)
 		timerCh := make(chan bool, 1)
 
@@ -470,22 +412,8 @@ func (a *a1pController) HandlePolicyUpdate(ctx context.Context, policyID, policy
 		if callbackURI, ok := params[utils.NotificationDestination]; ok {
 			reqMsg.NotificationDestination = callbackURI
 		}
-
-		sbMessage := &stream.SBStreamMessage{
-			A1SBIMessageType: stream.PolicyRequestMessage,
-			A1SBIRPCType:     stream.PolicyUpdate,
-			A1Service:        stream.PolicyManagement,
-			Payload:          reqMsg,
-		}
-
-		sbID := stream.ID{
-			SrcEndpointID:  "a1p-controller",
-			DestEndpointID: stream.GetEndpointIDWithTargetXAppID(targetXAppID, stream.PolicyManagement),
-		}
-		nbID := stream.ID{
-			DestEndpointID: "a1p-controller",
-			SrcEndpointID:  stream.GetEndpointIDWithTargetXAppID(targetXAppID, stream.PolicyManagement),
-		}
+		sbID, nbID := stream.GetStreamID(stream.A1PController, stream.GetEndpointIDWithTargetXAppID(targetXAppID, stream.PolicyManagement))
+		sbMessage := stream.NewSBStreamMessage(targetXAppID, stream.PolicyRequestMessage, stream.PolicyUpdate, stream.PolicyManagement, reqMsg)
 		respCh := make(chan *stream.SBStreamMessage)
 		timerCh := make(chan bool, 1)
 
@@ -607,7 +535,6 @@ func (a *a1pController) HandleGetPolicytypesPolicyTypeIdPolicies(ctx context.Con
 	var resErr error = nil
 
 	for _, targetXAppID := range targetXAppIDs {
-
 		requestID := uuid.New().String()
 		reqMsg := &a1.PolicyRequestMessage{
 			PolicyType: &a1.PolicyType{
@@ -622,24 +549,8 @@ func (a *a1pController) HandleGetPolicytypesPolicyTypeIdPolicies(ctx context.Con
 				},
 			},
 		}
-
-		sbMessage := &stream.SBStreamMessage{
-			A1SBIMessageType: stream.PolicyRequestMessage,
-			A1SBIRPCType:     stream.PolicyQuery,
-			A1Service:        stream.PolicyManagement,
-			Payload:          reqMsg,
-		}
-
-		sbID := stream.ID{
-			SrcEndpointID:  "a1p-controller",
-			DestEndpointID: stream.GetEndpointIDWithTargetXAppID(targetXAppID, stream.PolicyManagement),
-		}
-
-		nbID := stream.ID{
-			DestEndpointID: "a1p-controller",
-			SrcEndpointID:  stream.GetEndpointIDWithTargetXAppID(targetXAppID, stream.PolicyManagement),
-		}
-
+		sbID, nbID := stream.GetStreamID(stream.A1PController, stream.GetEndpointIDWithTargetXAppID(targetXAppID, stream.PolicyManagement))
+		sbMessage := stream.NewSBStreamMessage(targetXAppID, stream.PolicyRequestMessage, stream.PolicyQuery, stream.PolicyManagement, reqMsg)
 		respCh := make(chan *stream.SBStreamMessage)
 		timerCh := make(chan bool, 1)
 
@@ -759,24 +670,8 @@ func (a *a1pController) HandleGetPolicy(ctx context.Context, policyID, policyTyp
 				},
 			},
 		}
-
-		sbMessage := &stream.SBStreamMessage{
-			A1SBIMessageType: stream.PolicyRequestMessage,
-			A1SBIRPCType:     stream.PolicyQuery,
-			A1Service:        stream.PolicyManagement,
-			Payload:          reqMsg,
-		}
-
-		sbID := stream.ID{
-			SrcEndpointID:  "a1p-controller",
-			DestEndpointID: stream.GetEndpointIDWithTargetXAppID(targetXAppID, stream.PolicyManagement),
-		}
-
-		nbID := stream.ID{
-			DestEndpointID: "a1p-controller",
-			SrcEndpointID:  stream.GetEndpointIDWithTargetXAppID(targetXAppID, stream.PolicyManagement),
-		}
-
+		sbID, nbID := stream.GetStreamID(stream.A1PController, stream.GetEndpointIDWithTargetXAppID(targetXAppID, stream.PolicyManagement))
+		sbMessage := stream.NewSBStreamMessage(targetXAppID, stream.PolicyRequestMessage, stream.PolicyQuery, stream.PolicyManagement, reqMsg)
 		respCh := make(chan *stream.SBStreamMessage)
 		timerCh := make(chan bool, 1)
 
@@ -899,24 +794,8 @@ func (a *a1pController) HandleGetPolicyStatus(ctx context.Context, policyID, pol
 				},
 			},
 		}
-
-		sbMessage := &stream.SBStreamMessage{
-			A1SBIMessageType: stream.PolicyRequestMessage,
-			A1SBIRPCType:     stream.PolicyQuery,
-			A1Service:        stream.PolicyManagement,
-			Payload:          reqMsg,
-		}
-
-		sbID := stream.ID{
-			SrcEndpointID:  "a1p-controller",
-			DestEndpointID: stream.GetEndpointIDWithTargetXAppID(targetXAppID, stream.PolicyManagement),
-		}
-
-		nbID := stream.ID{
-			DestEndpointID: "a1p-controller",
-			SrcEndpointID:  stream.GetEndpointIDWithTargetXAppID(targetXAppID, stream.PolicyManagement),
-		}
-
+		sbID, nbID := stream.GetStreamID(stream.A1PController, stream.GetEndpointIDWithTargetXAppID(targetXAppID, stream.PolicyManagement))
+		sbMessage := stream.NewSBStreamMessage(targetXAppID, stream.PolicyRequestMessage, stream.PolicyQuery, stream.PolicyManagement, reqMsg)
 		respCh := make(chan *stream.SBStreamMessage)
 		timerCh := make(chan bool, 1)
 
