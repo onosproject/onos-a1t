@@ -108,17 +108,8 @@ func (a *a1pClient) incomingPolicyStatusForwarder(ctx context.Context) {
 				a1pLog.Warn(err)
 				return
 			}
-			sbMessage := &stream.SBStreamMessage{
-				TargetXAppID:     a.targetXAppID,
-				A1SBIMessageType: stream.PolicyStatusMessage,
-				A1Service:        stream.PolicyManagement,
-				A1SBIRPCType:     stream.PolicyStatus,
-				Payload:          msg,
-			}
-			nbID := stream.ID{
-				SrcEndpointID:  stream.GetEndpointIDWithTargetXAppID(a.targetXAppID, stream.PolicyManagement),
-				DestEndpointID: "a1p-controller",
-			}
+			sbMessage := stream.NewSBStreamMessage(a.targetXAppID, stream.PolicyStatusMessage, stream.PolicyStatus, stream.PolicyManagement, msg)
+			_, nbID := stream.GetStreamID(stream.A1PController, stream.GetEndpointIDWithTargetXAppID(a.targetXAppID, stream.PolicyManagement))
 			err = a.streamBroker.Send(nbID, sbMessage)
 			if err != nil {
 				a1pLog.Warn(err)
@@ -129,11 +120,7 @@ func (a *a1pClient) incomingPolicyStatusForwarder(ctx context.Context) {
 
 func (a *a1pClient) runOutgoingMsgDispatcher(ctx context.Context) error {
 	msgCh := make(chan *stream.SBStreamMessage)
-	sbID := stream.ID{
-		SrcEndpointID:  "a1p-controller",
-		DestEndpointID: stream.GetEndpointIDWithTargetXAppID(a.targetXAppID, stream.PolicyManagement),
-	}
-
+	sbID, _ := stream.GetStreamID(stream.A1PController, stream.GetEndpointIDWithTargetXAppID(a.targetXAppID, stream.PolicyManagement))
 	watcherID := uuid.New()
 	err := a.streamBroker.Watch(sbID, msgCh, watcherID)
 	if err != nil {
@@ -195,17 +182,8 @@ func (a *a1pClient) outgoingMsgDispatcher(ctx context.Context, msg *stream.SBStr
 
 func (a *a1pClient) forwardResponseMsg(msg interface{}, messageType stream.A1SBIMessageType, rpcType stream.A1SBIRPCType) {
 	a1pLog.Info("Forwarding response message")
-	sbMessage := &stream.SBStreamMessage{
-		TargetXAppID:     a.targetXAppID,
-		A1SBIMessageType: messageType,
-		A1Service:        stream.PolicyManagement,
-		A1SBIRPCType:     rpcType,
-		Payload:          msg,
-	}
-	nbID := stream.ID{
-		SrcEndpointID:  stream.GetEndpointIDWithTargetXAppID(a.targetXAppID, stream.PolicyManagement),
-		DestEndpointID: "a1p-controller",
-	}
+	sbMessage := stream.NewSBStreamMessage(a.targetXAppID, messageType, rpcType, stream.PolicyManagement, msg)
+	_, nbID := stream.GetStreamID(stream.A1PController, stream.GetEndpointIDWithTargetXAppID(a.targetXAppID, stream.PolicyManagement))
 	err := a.streamBroker.Send(nbID, sbMessage)
 	if err != nil {
 		a1pLog.Warn(err)
@@ -214,8 +192,6 @@ func (a *a1pClient) forwardResponseMsg(msg interface{}, messageType stream.A1SBI
 
 func (a *a1pClient) Close() {
 	defer delete(a.sessions, stream.PolicyStatus)
-
-	// delete stream
 	deleteStream(a.targetXAppID, stream.PolicyManagement, a.streamBroker)
 }
 

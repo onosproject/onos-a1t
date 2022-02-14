@@ -62,3 +62,8 @@ type SBStreamMessage struct {
 	A1Service        A1Service
 	Payload          interface{}
 }
+
+const (
+	A1PController  = "a1p-controller"
+	A1EIController = "a1ei-controller"
+)
