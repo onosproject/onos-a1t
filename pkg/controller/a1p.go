@@ -8,8 +8,8 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"fmt"
 	"github.com/google/uuid"
+	policyschemas "github.com/onosproject/onos-a1-dm/go/policy_schemas"
 	policystatusv2 "github.com/onosproject/onos-a1-dm/go/policy_status/v2"
 	"github.com/onosproject/onos-a1t/pkg/rnib"
 	"github.com/onosproject/onos-a1t/pkg/store"
@@ -17,11 +17,8 @@ import (
 	"github.com/onosproject/onos-a1t/pkg/utils"
 	"github.com/onosproject/onos-api/go/onos/a1t/a1"
 	"github.com/onosproject/onos-lib-go/pkg/errors"
-	"net/http"
-	"time"
-
-	policyschemas "github.com/onosproject/onos-a1-dm/go/policy_schemas"
 	"github.com/onosproject/onos-lib-go/pkg/logging"
+	"net/http"
 )
 
 var logA1P = logging.GetLogger("controller", "a1p")
@@ -200,48 +197,13 @@ func (a *a1pController) HandlePolicyCreate(ctx context.Context, policyID, policy
 		sbID, nbID := stream.GetStreamID(stream.A1PController, stream.GetEndpointIDWithTargetXAppID(targetXAppID, stream.PolicyManagement))
 		sbMessage := stream.NewSBStreamMessage(targetXAppID, stream.PolicyRequestMessage, stream.PolicySetup, stream.PolicyManagement, reqMsg)
 		respCh := make(chan *stream.SBStreamMessage)
-		timerCh := make(chan bool, 1)
-
-		go func(timer time.Duration, ch chan bool) {
-			time.Sleep(timer)
-			timerCh <- true
-			close(timerCh)
-		}(TimeoutTimer, timerCh)
 
 		watcherID := uuid.New()
 		logA1P.Infof("New watcher %v added", watcherID)
-		eCh := make(chan error, 1)
+		outputCh := make(chan interface{}, 1)
+		//eCh := make(chan error, 1)
 
-		go func(id stream.ID, wID uuid.UUID, eCh chan error) {
-			for {
-				select {
-				case msg := <-respCh:
-					logA1P.Infof("Message %v received", msg)
-					switch result := msg.Payload.(type) {
-					case *a1.PolicyResultMessage:
-						if result.Message.Header.RequestId == requestID {
-							logA1P.Infof("same request ID matched: Message %v", msg)
-							if !result.Message.Result.Success {
-								logA1P.Error(fmt.Errorf(result.Message.Result.Reason))
-								eCh <- fmt.Errorf(result.Message.Result.Reason)
-								a.streamBroker.DeleteWatcher(nbID, watcherID)
-								return
-							}
-							eCh <- nil
-
-							a.streamBroker.DeleteWatcher(nbID, watcherID)
-							return
-						}
-					}
-				case <-timerCh:
-					logA1P.Error(errors.NewTimeout("Could not receive PolicyResultMessage in time (timer: %v)", TimeoutTimer))
-					eCh <- errors.NewTimeout("Could not receive PolicyResultMessage in time (timer: %v)", TimeoutTimer)
-					a.streamBroker.DeleteWatcher(nbID, watcherID)
-
-					return
-				}
-			}
-		}(nbID, watcherID, eCh)
+		go waitRespMsgWithTimer(nbID, watcherID, requestID, respCh, outputCh, TimeoutTimer, a.streamBroker)
 
 		err = a.streamBroker.Watch(nbID, respCh, watcherID)
 		if err != nil {
@@ -259,11 +221,11 @@ func (a *a1pController) HandlePolicyCreate(ctx context.Context, policyID, policy
 			return err
 		}
 
-		err = <-eCh
+		err, _ = checkOutput(<-outputCh)
 		if err != nil {
 			resErr = err
 		}
-		close(eCh)
+		close(outputCh)
 	}
 	if resErr != nil {
 		logA1P.Error(resErr)
@@ -302,49 +264,12 @@ func (a *a1pController) HandlePolicyDelete(ctx context.Context, policyID, policy
 		sbID, nbID := stream.GetStreamID(stream.A1PController, stream.GetEndpointIDWithTargetXAppID(targetXAppID, stream.PolicyManagement))
 		sbMessage := stream.NewSBStreamMessage(targetXAppID, stream.PolicyResultMessage, stream.PolicyDelete, stream.PolicyManagement, reqMsg)
 		respCh := make(chan *stream.SBStreamMessage)
-		timerCh := make(chan bool, 1)
-
-		go func(timer time.Duration, ch chan bool) {
-			time.Sleep(timer)
-			timerCh <- true
-			close(timerCh)
-		}(TimeoutTimer, timerCh)
 
 		watcherID := uuid.New()
 		logA1P.Infof("New watcher %v added", watcherID)
-		eCh := make(chan error, 1)
+		outputCh := make(chan interface{}, 1)
 
-		go func(id stream.ID, wID uuid.UUID, eCh chan error) {
-			for {
-				select {
-				case msg := <-respCh:
-					logA1P.Infof("Message %v received", msg)
-					switch result := msg.Payload.(type) {
-					case *a1.PolicyResultMessage:
-						if result.Message.Header.RequestId == requestID {
-							logA1P.Infof("same request ID matched: Message %v", msg)
-							if !result.Message.Result.Success {
-								logA1P.Error(fmt.Errorf(result.Message.Result.Reason))
-								eCh <- fmt.Errorf(result.Message.Result.Reason)
-
-								a.streamBroker.DeleteWatcher(nbID, watcherID)
-								return
-							}
-							eCh <- nil
-
-							a.streamBroker.DeleteWatcher(nbID, watcherID)
-							return
-						}
-					}
-				case <-timerCh:
-					logA1P.Error(errors.NewTimeout("Could not receive PolicyResultMessage in time (timer: %v)", TimeoutTimer))
-					eCh <- errors.NewTimeout("Could not receive PolicyResultMessage in time (timer: %v)", TimeoutTimer)
-
-					a.streamBroker.DeleteWatcher(nbID, watcherID)
-					return
-				}
-			}
-		}(nbID, watcherID, eCh)
+		go waitRespMsgWithTimer(nbID, watcherID, requestID, respCh, outputCh, TimeoutTimer, a.streamBroker)
 
 		err = a.streamBroker.Watch(nbID, respCh, watcherID)
 		if err != nil {
@@ -362,11 +287,11 @@ func (a *a1pController) HandlePolicyDelete(ctx context.Context, policyID, policy
 			return err
 		}
 
-		err = <-eCh
+		err, _ = checkOutput(<-outputCh)
 		if err != nil {
 			resErr = err
 		}
-		close(eCh)
+		close(outputCh)
 	}
 
 	if resErr != nil {
@@ -415,49 +340,12 @@ func (a *a1pController) HandlePolicyUpdate(ctx context.Context, policyID, policy
 		sbID, nbID := stream.GetStreamID(stream.A1PController, stream.GetEndpointIDWithTargetXAppID(targetXAppID, stream.PolicyManagement))
 		sbMessage := stream.NewSBStreamMessage(targetXAppID, stream.PolicyRequestMessage, stream.PolicyUpdate, stream.PolicyManagement, reqMsg)
 		respCh := make(chan *stream.SBStreamMessage)
-		timerCh := make(chan bool, 1)
-
-		go func(timer time.Duration, ch chan bool) {
-			time.Sleep(timer)
-			timerCh <- true
-			close(timerCh)
-		}(TimeoutTimer, timerCh)
 
 		watcherID := uuid.New()
 		logA1P.Infof("New watcher %v added", watcherID)
-		eCh := make(chan error, 1)
+		outputCh := make(chan interface{}, 1)
 
-		go func(id stream.ID, wID uuid.UUID, eCh chan error) {
-			for {
-				select {
-				case msg := <-respCh:
-					logA1P.Infof("Message %v received", msg)
-					switch result := msg.Payload.(type) {
-					case *a1.PolicyResultMessage:
-						if result.Message.Header.RequestId == requestID {
-							logA1P.Infof("same request ID matched: Message %v", msg)
-							if !result.Message.Result.Success {
-								logA1P.Error(fmt.Errorf(result.Message.Result.Reason))
-								eCh <- fmt.Errorf(result.Message.Result.Reason)
-
-								a.streamBroker.DeleteWatcher(nbID, watcherID)
-								return
-							}
-							eCh <- nil
-
-							a.streamBroker.DeleteWatcher(nbID, watcherID)
-							return
-						}
-					}
-				case <-timerCh:
-					logA1P.Error(errors.NewTimeout("Could not receive PolicyResultMessage in time (timer: %v)", TimeoutTimer))
-					eCh <- errors.NewTimeout("Could not receive PolicyResultMessage in time (timer: %v)", TimeoutTimer)
-
-					a.streamBroker.DeleteWatcher(nbID, watcherID)
-					return
-				}
-			}
-		}(nbID, watcherID, eCh)
+		go waitRespMsgWithTimer(nbID, watcherID, requestID, respCh, outputCh, TimeoutTimer, a.streamBroker)
 
 		err = a.streamBroker.Watch(nbID, respCh, watcherID)
 		if err != nil {
@@ -473,11 +361,11 @@ func (a *a1pController) HandlePolicyUpdate(ctx context.Context, policyID, policy
 			return err
 		}
 
-		err = <-eCh
+		err, _ = checkOutput(<-outputCh)
 		if err != nil {
 			resErr = err
 		}
-		close(eCh)
+		close(outputCh)
 	}
 
 	if resErr != nil {
@@ -552,58 +440,13 @@ func (a *a1pController) HandleGetPolicytypesPolicyTypeIdPolicies(ctx context.Con
 		sbID, nbID := stream.GetStreamID(stream.A1PController, stream.GetEndpointIDWithTargetXAppID(targetXAppID, stream.PolicyManagement))
 		sbMessage := stream.NewSBStreamMessage(targetXAppID, stream.PolicyRequestMessage, stream.PolicyQuery, stream.PolicyManagement, reqMsg)
 		respCh := make(chan *stream.SBStreamMessage)
-		timerCh := make(chan bool, 1)
-
-		go func(timer time.Duration, ch chan bool) {
-			time.Sleep(timer)
-			timerCh <- true
-			close(timerCh)
-		}(TimeoutTimer, timerCh)
 
 		watcherID := uuid.New()
 		logA1P.Infof("New watcher %v added", watcherID)
-		eCh := make(chan interface{}, 1)
+		outputCh := make(chan interface{}, 1)
 
-		go func(id stream.ID, wID uuid.UUID, eCh chan interface{}) {
-			for {
-				select {
-				case msg := <-respCh:
-					logA1P.Infof("Message %v received", msg)
-					switch result := msg.Payload.(type) {
-					case *a1.PolicyResultMessage:
-						if result.Message.Header.RequestId == requestID {
-							logA1P.Infof("same request ID matched: Message %v", msg)
-							if !result.Message.Result.Success {
-								logA1P.Error(fmt.Errorf(result.Message.Result.Reason))
-								eCh <- fmt.Errorf(result.Message.Result.Reason)
+		go waitRespMsgWithTimer(nbID, watcherID, requestID, respCh, outputCh, TimeoutTimer, a.streamBroker)
 
-								a.streamBroker.DeleteWatcher(nbID, watcherID)
-								return
-							}
-							var obj []string
-							err = json.Unmarshal(result.Message.Payload, &obj)
-							if err != nil {
-								logA1P.Error(err)
-								eCh <- err
-
-								a.streamBroker.DeleteWatcher(nbID, watcherID)
-								return
-							}
-							eCh <- obj
-
-							a.streamBroker.DeleteWatcher(nbID, watcherID)
-							return
-						}
-					}
-				case <-timerCh:
-					logA1P.Error(errors.NewTimeout("Could not receive PolicyResultMessage in time (timer: %v)", TimeoutTimer))
-					eCh <- errors.NewTimeout("Could not receive PolicyResultMessage in time (timer: %v)", TimeoutTimer)
-
-					a.streamBroker.DeleteWatcher(nbID, watcherID)
-					return
-				}
-			}
-		}(nbID, watcherID, eCh)
 		err = a.streamBroker.Watch(nbID, respCh, watcherID)
 		if err != nil {
 			logA1P.Error(err)
@@ -618,14 +461,21 @@ func (a *a1pController) HandleGetPolicytypesPolicyTypeIdPolicies(ctx context.Con
 			return nil, err
 		}
 
-		o := <-eCh
-		switch o := o.(type) {
-		case error:
-			resErr = o
-		case []string:
-			objs = append(objs, o)
+		err, resp := checkOutput(<-outputCh)
+		if err != nil {
+			resErr = err
 		}
-		close(eCh)
+		close(outputCh)
+
+		var obj []string
+		if err == nil {
+			err = json.Unmarshal(resp.(*a1.PolicyResultMessage).Message.Payload, &obj)
+			if err != nil {
+				resErr = err
+			} else {
+				objs = append(objs, obj)
+			}
+		}
 	}
 
 	if resErr != nil {
@@ -673,58 +523,12 @@ func (a *a1pController) HandleGetPolicy(ctx context.Context, policyID, policyTyp
 		sbID, nbID := stream.GetStreamID(stream.A1PController, stream.GetEndpointIDWithTargetXAppID(targetXAppID, stream.PolicyManagement))
 		sbMessage := stream.NewSBStreamMessage(targetXAppID, stream.PolicyRequestMessage, stream.PolicyQuery, stream.PolicyManagement, reqMsg)
 		respCh := make(chan *stream.SBStreamMessage)
-		timerCh := make(chan bool, 1)
-
-		go func(timer time.Duration, ch chan bool) {
-			time.Sleep(timer)
-			timerCh <- true
-			close(timerCh)
-		}(TimeoutTimer, timerCh)
 
 		watcherID := uuid.New()
 		logA1P.Infof("New watcher %v added", watcherID)
-		eCh := make(chan interface{}, 1)
+		outputCh := make(chan interface{}, 1)
 
-		go func(id stream.ID, wID uuid.UUID, eCh chan interface{}) {
-			for {
-				select {
-				case msg := <-respCh:
-					logA1P.Infof("Message %v received", msg)
-					switch result := msg.Payload.(type) {
-					case *a1.PolicyResultMessage:
-						if result.Message.Header.RequestId == requestID {
-							logA1P.Infof("same request ID matched: Message %v", msg)
-							if !result.Message.Result.Success {
-								logA1P.Error(fmt.Errorf(result.Message.Result.Reason))
-								eCh <- fmt.Errorf(result.Message.Result.Reason)
-
-								a.streamBroker.DeleteWatcher(nbID, watcherID)
-								return
-							}
-							var obj map[string]interface{}
-							err = json.Unmarshal(result.Message.Payload, &obj)
-							if err != nil {
-								logA1P.Error(err)
-								eCh <- err
-
-								a.streamBroker.DeleteWatcher(nbID, watcherID)
-								return
-							}
-							eCh <- obj
-
-							a.streamBroker.DeleteWatcher(nbID, watcherID)
-							return
-						}
-					}
-				case <-timerCh:
-					logA1P.Error(errors.NewTimeout("Could not receive PolicyResultMessage in time (timer: %v)", TimeoutTimer))
-					eCh <- errors.NewTimeout("Could not receive PolicyResultMessage in time (timer: %v)", TimeoutTimer)
-
-					a.streamBroker.DeleteWatcher(nbID, watcherID)
-					return
-				}
-			}
-		}(nbID, watcherID, eCh)
+		go waitRespMsgWithTimer(nbID, watcherID, requestID, respCh, outputCh, TimeoutTimer, a.streamBroker)
 
 		err = a.streamBroker.Watch(nbID, respCh, watcherID)
 		if err != nil {
@@ -742,14 +546,21 @@ func (a *a1pController) HandleGetPolicy(ctx context.Context, policyID, policyTyp
 			return nil, err
 		}
 
-		o := <-eCh
-		switch o := o.(type) {
-		case error:
-			resErr = o
-		case map[string]interface{}:
-			objs = append(objs, o)
+		err, resp := checkOutput(<-outputCh)
+		if err != nil {
+			resErr = err
 		}
-		close(eCh)
+		close(outputCh)
+
+		var obj map[string]interface{}
+		if err == nil {
+			err = json.Unmarshal(resp.(*a1.PolicyResultMessage).Message.Payload, &obj)
+			if err != nil {
+				resErr = err
+			} else {
+				objs = append(objs, obj)
+			}
+		}
 	}
 
 	if resErr != nil {
@@ -797,58 +608,12 @@ func (a *a1pController) HandleGetPolicyStatus(ctx context.Context, policyID, pol
 		sbID, nbID := stream.GetStreamID(stream.A1PController, stream.GetEndpointIDWithTargetXAppID(targetXAppID, stream.PolicyManagement))
 		sbMessage := stream.NewSBStreamMessage(targetXAppID, stream.PolicyRequestMessage, stream.PolicyQuery, stream.PolicyManagement, reqMsg)
 		respCh := make(chan *stream.SBStreamMessage)
-		timerCh := make(chan bool, 1)
-
-		go func(timer time.Duration, ch chan bool) {
-			time.Sleep(timer)
-			timerCh <- true
-			close(timerCh)
-		}(TimeoutTimer, timerCh)
 
 		watcherID := uuid.New()
 		logA1P.Infof("New watcher %v added", watcherID)
-		eCh := make(chan interface{}, 1)
+		outputCh := make(chan interface{}, 1)
 
-		go func(id stream.ID, wID uuid.UUID, eCh chan interface{}) {
-			for {
-				select {
-				case msg := <-respCh:
-					logA1P.Infof("Message %v received", msg)
-					switch result := msg.Payload.(type) {
-					case *a1.PolicyResultMessage:
-						if result.Message.Header.RequestId == requestID {
-							logA1P.Infof("same request ID matched: Message %v", msg)
-							if !result.Message.Result.Success {
-								logA1P.Error(fmt.Errorf(result.Message.Result.Reason))
-								eCh <- fmt.Errorf(result.Message.Result.Reason)
-
-								a.streamBroker.DeleteWatcher(nbID, watcherID)
-								return
-							}
-							var obj map[string]interface{}
-							err = json.Unmarshal(result.Message.Payload, &obj)
-							if err != nil {
-								logA1P.Error(err)
-								eCh <- err
-
-								a.streamBroker.DeleteWatcher(nbID, watcherID)
-								return
-							}
-							eCh <- obj
-
-							a.streamBroker.DeleteWatcher(nbID, watcherID)
-							return
-						}
-					}
-				case <-timerCh:
-					logA1P.Error(errors.NewTimeout("Could not receive PolicyResultMessage in time (timer: %v)", TimeoutTimer))
-					eCh <- errors.NewTimeout("Could not receive PolicyResultMessage in time (timer: %v)", TimeoutTimer)
-
-					a.streamBroker.DeleteWatcher(nbID, watcherID)
-					return
-				}
-			}
-		}(nbID, watcherID, eCh)
+		go waitRespMsgWithTimer(nbID, watcherID, requestID, respCh, outputCh, TimeoutTimer, a.streamBroker)
 
 		err = a.streamBroker.Watch(nbID, respCh, watcherID)
 		if err != nil {
@@ -866,14 +631,21 @@ func (a *a1pController) HandleGetPolicyStatus(ctx context.Context, policyID, pol
 			return nil, err
 		}
 
-		o := <-eCh
-		switch o := o.(type) {
-		case error:
-			resErr = o
-		case map[string]interface{}:
-			objs = append(objs, o)
+		err, resp := checkOutput(<-outputCh)
+		if err != nil {
+			resErr = err
 		}
-		close(eCh)
+		close(outputCh)
+
+		var obj map[string]interface{}
+		if err == nil {
+			err = json.Unmarshal(resp.(*a1.PolicyResultMessage).Message.Payload, &obj)
+			if err != nil {
+				resErr = err
+			} else {
+				objs = append(objs, obj)
+			}
+		}
 	}
 
 	if resErr != nil {
