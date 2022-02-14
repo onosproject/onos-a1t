@@ -17,7 +17,8 @@ import (
 
 func waitRespMsgWithTimer(id stream.ID, watcherID uuid.UUID, reqID string, respCh chan *stream.SBStreamMessage, outputCh chan interface{}, timeout time.Duration, streamBroker stream.Broker) {
 	defer streamBroker.DeleteWatcher(id, watcherID)
-	ctx, _ := context.WithTimeout(context.Background(), timeout)
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	defer cancel()
 	for {
 		select {
 		case resp := <-respCh:
