@@ -6,6 +6,7 @@ package xapp
 
 import (
 	"context"
+	"strings"
 
 	"github.com/onosproject/onos-api/go/onos/topo"
 	"github.com/onosproject/onos-lib-go/pkg/logging"
@@ -16,26 +17,42 @@ var log = logging.GetLogger("a1t-xapp")
 
 // Config is a manager configuration
 type Config struct {
-	CAPath      string
-	KeyPath     string
-	CertPath    string
-	E2tEndpoint string
-	GRPCPort    int
-	RicActionID int32
-	ConfigPath  string
+	CAPath        string
+	KeyPath       string
+	CertPath      string
+	E2tEndpoint   string
+	GRPCPort      int
+	RicActionID   int32
+	ConfigPath    string
+	PolicyTypeIDs string
+}
+
+func configPolicyTypeIDs(config Config) []*topo.A1PolicyType {
+
+	supportedTypeIDs := strings.Split(config.PolicyTypeIDs, ",")
+
+	a1PolicyTypes := make([]*topo.A1PolicyType, 0)
+
+	for _, typeID := range supportedTypeIDs {
+		typeIDVersion := typeID[strings.LastIndex(typeID, ",")+1:]
+		typeIDName := strings.Split(typeID, "_")[0]
+
+		a1Policy := &topo.A1PolicyType{
+			Name:        topo.PolicyTypeName(typeIDName),
+			Version:     topo.PolicyTypeVersion(typeIDVersion),
+			ID:          topo.PolicyTypeID(typeID),
+			Description: "",
+		}
+		a1PolicyTypes = append(a1PolicyTypes, a1Policy)
+	}
+
+	return a1PolicyTypes
 }
 
 // NewManager generates the new a1txapp manager
 func NewManager(config Config) (*Manager, error) {
 
-	a1PolicyTypes := make([]*topo.A1PolicyType, 0)
-	a1Policy := &topo.A1PolicyType{
-		Name:        "ORAN_TrafficSteeringPreference",
-		Version:     "2.0.0",
-		ID:          "ORAN_TrafficSteeringPreference_2.0.0",
-		Description: "O-RAN traffic steering",
-	}
-	a1PolicyTypes = append(a1PolicyTypes, a1Policy)
+	a1PolicyTypes := configPolicyTypeIDs(config)
 
 	a1Manager, err := NewNBIManager(config.CAPath, config.KeyPath, config.CertPath, config.GRPCPort, "onos-a1txapp", a1PolicyTypes)
 	if err != nil {

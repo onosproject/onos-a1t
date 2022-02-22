@@ -8,7 +8,7 @@ var (
 	NotifyURL             = "http://127.0.0.1:9640/"
 	PolicyId              = "000"
 	PolicyTypeId          = "ORAN_TrafficSteeringPreference_2.0.0"
-	ExpectedA1PMPolicyIDs = []string{"1", "2", PolicyId}
+	ExpectedA1PMPolicyIDs = []string{PolicyId}
 	ExpectedA1PMTypeIDs   = []string{PolicyTypeId}
 	ExpectedPolicyObject  = `
 	{

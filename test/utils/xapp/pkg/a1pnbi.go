@@ -107,8 +107,8 @@ func (a *A1PService) Register(s *grpc.Server) {
 		TsPolicyTypeMap: make(map[string][]byte),
 		StatusUpdateCh:  make(chan *a1tapi.PolicyStatusMessage),
 	}
-	server.TsPolicyTypeMap["1"] = []byte(SampleJSON1)
-	server.TsPolicyTypeMap["2"] = []byte(SampleJSON2)
+	// server.TsPolicyTypeMap["1"] = []byte(SampleJSON1)
+	// server.TsPolicyTypeMap["2"] = []byte(SampleJSON2)
 	a1tapi.RegisterPolicyServiceServer(s, server)
 }
 

@@ -6,8 +6,6 @@ package nonrtric
 
 import (
 	"context"
-	"os"
-	"os/signal"
 	"time"
 
 	"github.com/labstack/echo/v4"
@@ -41,17 +39,17 @@ func NewRestServer(baseURL string, controller Controller) (RestServer, error) {
 func (r *server) Start() {
 	err := r.echo.Start(r.baseURL)
 	if err != nil {
-		r.echo.Logger.Fatal(err)
+		r.echo.Logger.Warn(err)
 	}
 }
 
 func (r *server) Stop() {
-	quit := make(chan os.Signal, 1)
-	signal.Notify(quit, os.Interrupt)
-	<-quit
-	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
+	// quit := make(chan os.Signal, 1)
+	// signal.Notify(quit, os.Interrupt)
+	// <-quit
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 	if err := r.echo.Shutdown(ctx); err != nil {
-		r.echo.Logger.Fatal(err)
+		r.echo.Logger.Warn(err)
 	}
 }

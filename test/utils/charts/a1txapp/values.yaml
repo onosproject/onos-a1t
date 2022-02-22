@@ -39,6 +39,7 @@ service:
       port: 31701
 
 config:
+  policyTypeIDs: ""
   a1txapp:
     config_json: {}      
 

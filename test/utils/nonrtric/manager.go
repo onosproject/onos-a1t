@@ -45,10 +45,22 @@ func (m *Manager) start() error {
 	return nil
 }
 
+func (m *Manager) stop() error {
+	m.restserver.Stop()
+	return nil
+}
+
 func (m *Manager) Run() {
 	err := m.start()
 	if err != nil {
 		log.Errorf("Error when starting A1T test-manager: %v", err)
+	}
+}
+
+func (m *Manager) End() {
+	err := m.stop()
+	if err != nil {
+		log.Errorf("Error when stopping A1T test-manager: %v", err)
 	}
 }
 
