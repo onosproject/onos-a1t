@@ -28,7 +28,7 @@ type Store interface {
 	Delete(ctx context.Context, key interface{}) error
 
 	// Entries streams the entries from the local store through received go chan
-	Entries(ctx context.Context, ch chan<- *Entry) error
+	Entries(ctx context.Context, ch chan<- *Entry)
 
 	// Watch watches the event of this local store
 	Watch(ctx context.Context, ch chan<- Event) error
@@ -126,13 +126,14 @@ func (s *store) Delete(ctx context.Context, key interface{}) error {
 	return nil
 }
 
-func (s *store) Entries(ctx context.Context, ch chan<- *Entry) error {
+func (s *store) Entries(ctx context.Context, ch chan<- *Entry) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
 	if len(s.localStore) == 0 {
 		close(ch)
-		return errors.NewNotFound("There is no entry in the local store")
+		log.Error(errors.NewNotFound("There is no entry in the local store"))
+		return
 	}
 
 	for _, entry := range s.localStore {
@@ -140,7 +141,6 @@ func (s *store) Entries(ctx context.Context, ch chan<- *Entry) error {
 	}
 
 	close(ch)
-	return nil
 }
 
 func (s *store) Watch(ctx context.Context, ch chan<- Event) error {
