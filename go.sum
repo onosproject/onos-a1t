@@ -1010,8 +1010,8 @@ github.com/onosproject/onos-a1-dm/go v0.0.3 h1:Nl475z/kwKNn1hwurglwckl7sQJFEZhHs
 github.com/onosproject/onos-a1-dm/go v0.0.3/go.mod h1:c70+vte0tVrBBVZSiShW8i7r8vabR5xifhUYDtQnV1o=
 github.com/onosproject/onos-api/go v0.8.0/go.mod h1:0hdMkFFN2AyKLHMiJVP3ZE61QgSYfNXHiI4BJ/Ry7UI=
 github.com/onosproject/onos-api/go v0.8.30/go.mod h1:0hdMkFFN2AyKLHMiJVP3ZE61QgSYfNXHiI4BJ/Ry7UI=
-github.com/onosproject/onos-api/go v0.8.50 h1:qWg+6VrsdiZotkSHuuqhujgDQzndwlJyJ0XSQMNF7x4=
-github.com/onosproject/onos-api/go v0.8.50/go.mod h1:0hdMkFFN2AyKLHMiJVP3ZE61QgSYfNXHiI4BJ/Ry7UI=
+github.com/onosproject/onos-api/go v0.9.4 h1:U4duI5p7IA7AbuisvvTz5Dz7qepVG/22NXxv4l0ihjE=
+github.com/onosproject/onos-api/go v0.9.4/go.mod h1:0hdMkFFN2AyKLHMiJVP3ZE61QgSYfNXHiI4BJ/Ry7UI=
 github.com/onosproject/onos-lib-go v0.8.1 h1:debi/WjARXRmYNRtnMPVj3q1MuTl9kPFmrbRf0NGCQU=
 github.com/onosproject/onos-lib-go v0.8.1/go.mod h1:1klcUPfLoXPVu4fzM/sYi1V3Pggm2NRbY2fTzG2W1HY=
 github.com/onosproject/onos-proxy v0.1.0 h1:scA9UfqiclviBjR9SoRqSN5YiO+vrGsg7AYaDFMWGd0=

@@ -5,17 +5,33 @@
 package cli
 
 import (
+	"context"
+	"encoding/json"
+	"fmt"
+	"github.com/onosproject/onos-a1t/pkg/controller"
+	a1p "github.com/onosproject/onos-a1t/pkg/northbound/a1ap/policy_management"
+	"github.com/onosproject/onos-a1t/pkg/rnib"
 	"github.com/onosproject/onos-a1t/pkg/store"
+	"github.com/onosproject/onos-lib-go/pkg/logging"
+	"google.golang.org/grpc"
+	"time"
 
+	a1tadminapi "github.com/onosproject/onos-api/go/onos/a1t/admin"
 	"github.com/onosproject/onos-lib-go/pkg/logging/service"
 )
 
+const TimeoutTimer = time.Second * 5
+
+var cliLog = logging.GetLogger("northbound", "cli")
+
 // NewService returns a new A1T interface service.
-func NewService(subscriptionStore store.Store, policiesStore store.Store, eijobsStore store.Store) service.Service {
+func NewService(subscriptionStore store.Store, policiesStore store.Store, eijobsStore store.Store, controllerBroker controller.Broker, rnibClient rnib.TopoClient) service.Service {
 	return &Service{
 		subscriptionStore: subscriptionStore,
 		policiesStore:     policiesStore,
 		eijobsStore:       eijobsStore,
+		rnibClient:        rnibClient,
+		ctrlBroker:        controllerBroker,
 	}
 }
 
@@ -25,97 +41,191 @@ type Service struct {
 	subscriptionStore store.Store
 	policiesStore     store.Store
 	eijobsStore       store.Store
+	rnibClient        rnib.TopoClient
+	ctrlBroker        controller.Broker
 }
 
-// Register registers the Service with the gRPC server.
-//func (s Service) Register(r *grpc.Server) {
-//	server := &Server{
-//		subscriptionStore: s.subscriptionStore,
-//		policiesStore:     s.policiesStore,
-//		eijobsStore:       s.eijobsStore,
-//	}
-//	a1tapi.RegisterA1TServer(r, server)
-//}
-//
-//// Server implements the A1T gRPC service for administrative facilities.
-//type Server struct {
-//	subscriptionStore store.Store
-//	policiesStore     store.Store
-//	eijobsStore       store.Store
-//}
-//
-//func (s *Server) Get(ctx context.Context, request *a1tapi.GetRequest) (*a1tapi.GetResponse, error) {
-//
-//	response := &a1tapi.GetResponse{}
-//	//
-//	//switch request.Object.GetType() {
-//	//case a1tapi.Object_POLICY:
-//	//
-//	//	policyObj := request.Object.GetPolicy()
-//	//
-//	//	a1pEntry, err := a1pstore.GetPolicyByID(ctx, s.policiesStore, policyObj.Id, policyObj.Typeid)
-//	//	if err != nil {
-//	//		return response, err
-//	//	}
-//	//
-//	//	a1pEntryValue := a1pEntry.Value.(a1pstore.Value)
-//	//
-//	//	policyObjectValue, err := json.Marshal(a1pEntryValue.PolicyObject)
-//	//	if err != nil {
-//	//		return response, err
-//	//	}
-//	//
-//	//	response := &a1tapi.GetResponse{
-//	//		Object: &a1tapi.Object{
-//	//			Type: a1tapi.Object_POLICY,
-//	//			Obj: &a1tapi.Object_Policy{
-//	//				Policy: &a1tapi.Policy{
-//	//					Id:     policyObj.Id,
-//	//					Typeid: policyObj.Typeid,
-//	//					Object: policyObjectValue,
-//	//				},
-//	//			},
-//	//		},
-//	//	}
-//	//	return response, nil
-//	//
-//	//case a1tapi.Object_EIJOB:
-//	//}
-//
-//	return response, nil
-//}
-//
-//func (s *Server) List(ctx context.Context, request *a1tapi.GetRequest) (*a1tapi.ListResponse, error) {
-//
-//	response := &a1tapi.ListResponse{}
-//
-//	return response, nil
-//}
-//
-//func (s *Server) Watch(request *a1tapi.GetRequest, server a1tapi.A1T_WatchServer) error {
-//
-//	// response := &a1tapi.GetResponse{}
-//
-//	return nil
-//}
-//
-//func (s *Server) Create(ctx context.Context, request *a1tapi.CreateRequest) (*a1tapi.CreateResponse, error) {
-//
-//	response := &a1tapi.CreateResponse{}
-//
-//	return response, nil
-//}
-//
-//func (s *Server) Update(ctx context.Context, request *a1tapi.UpdateRequest) (*a1tapi.UpdateResponse, error) {
-//
-//	response := &a1tapi.UpdateResponse{}
-//
-//	return response, nil
-//}
-//
-//func (s *Server) Delete(ctx context.Context, request *a1tapi.DeleteRequest) (*a1tapi.DeleteResponse, error) {
-//
-//	response := &a1tapi.DeleteResponse{}
-//
-//	return response, nil
-//}
+func (s Service) Register(r *grpc.Server) {
+	server := &Server{
+		subscriptionStore: s.subscriptionStore,
+		policiesStore:     s.policiesStore,
+		eijobsStore:       s.eijobsStore,
+		rnibClient:        s.rnibClient,
+		ctrlBroker:        s.ctrlBroker,
+	}
+	a1tadminapi.RegisterA1TAdminServiceServer(r, server)
+}
+
+type Server struct {
+	subscriptionStore store.Store
+	policiesStore     store.Store
+	eijobsStore       store.Store
+	rnibClient        rnib.TopoClient
+	ctrlBroker        controller.Broker
+}
+
+func (s *Server) GetXAppConnections(request *a1tadminapi.GetXAppConnectionsRequest, server a1tadminapi.A1TAdminService_GetXAppConnectionsServer) error {
+	cliLog.Info("Get xApp Connection")
+	ch := make(chan *store.Entry)
+	ctx, cancel := context.WithTimeout(context.Background(), TimeoutTimer)
+	defer cancel()
+	go s.subscriptionStore.Entries(ctx, ch)
+
+	for e := range ch {
+		sKey := e.Key.(store.SubscriptionKey)
+		sValue := e.Value.(*store.SubscriptionValue)
+		if request.XappId != "" && request.XappId != string(sKey.TargetXAppID) {
+			continue
+		}
+
+		endPoint := fmt.Sprintf("%s:%d", sValue.A1EndpointIP, sValue.A1EndpointPort)
+		for _, c := range sValue.A1ServiceCapabilities {
+			resp := &a1tadminapi.GetXAppConnectionResponse{
+				XappId:                   string(sKey.TargetXAppID),
+				SupportedA1Service:       c.A1Service.String(),
+				SupportedA1ServiceTypeId: c.TypeID,
+				XappA1Endpoint:           endPoint,
+			}
+			err := server.Send(resp)
+			if err != nil {
+				return err
+			}
+		}
+	}
+
+	return nil
+}
+
+func (s *Server) GetPolicyTypeObject(request *a1tadminapi.GetPolicyTypeObjectRequest, server a1tadminapi.A1TAdminService_GetPolicyTypeObjectServer) error {
+	cliLog.Info("Get policy type object")
+	ctx, cancel := context.WithTimeout(context.Background(), TimeoutTimer)
+	defer cancel()
+
+	policyTypes := s.ctrlBroker.A1PController().HandleGetPolicyTypes(ctx)
+	for _, pt := range policyTypes {
+		policyTypeSchema, statusSchema, err := s.ctrlBroker.A1PController().HandleGetPolicytypesPolicyTypeId(ctx, pt)
+		if err != nil {
+			return err
+		}
+
+		if request.PolicyTypeId != "" && request.PolicyTypeId != pt {
+			continue
+		}
+
+		policyTypeObject := a1p.PolicyTypeObject{
+			PolicySchema: policyTypeSchema,
+			StatusSchema: (*a1p.JsonSchema)(&statusSchema),
+		}
+		pto, err := json.Marshal(policyTypeObject)
+		if err != nil {
+			return err
+		}
+
+		oIDs, err := s.ctrlBroker.A1PController().HandleGetPolicytypesPolicyTypeIdPolicies(ctx, pt)
+		if err != nil {
+			return err
+		}
+
+		resp := &a1tadminapi.GetPolicyTypeObjectResponse{
+			PolicyTypeId:     pt,
+			PolicyIds:        oIDs,
+			PolicyTypeObject: string(pto),
+		}
+
+		server.Send(resp)
+	}
+
+	return nil
+}
+
+func (s *Server) GetPolicyObject(request *a1tadminapi.GetPolicyObjectRequest, server a1tadminapi.A1TAdminService_GetPolicyObjectServer) error {
+	cliLog.Info("Get policy object")
+	ctx, cancel := context.WithTimeout(context.Background(), TimeoutTimer)
+	defer cancel()
+
+	var err error
+	tIDs := make([]string, 0)
+	pIDs := make([]string, 0)
+
+	if request.PolicyTypeId == "" {
+		tIDs = s.ctrlBroker.A1PController().HandleGetPolicyTypes(ctx)
+	} else {
+		tIDs = append(tIDs, request.PolicyTypeId)
+	}
+
+	for _, t := range tIDs {
+		if request.PolicyObjectId == "" {
+			pIDs, err = s.ctrlBroker.A1PController().HandleGetPolicytypesPolicyTypeIdPolicies(ctx, t)
+			if err != nil {
+				return err
+			}
+		} else {
+			pIDs = append(pIDs, request.PolicyObjectId)
+		}
+
+		for _, i := range pIDs {
+			obj, err := s.ctrlBroker.A1PController().HandleGetPolicy(ctx, i, t)
+			if err != nil {
+				return err
+			}
+			objJson, err := json.Marshal(obj)
+			if err != nil {
+				return err
+			}
+			resp := &a1tadminapi.GetPolicyObjectResponse{
+				PolicyTypeId:   t,
+				PolicyObjectId: i,
+				PolicyObject:   string(objJson),
+			}
+			server.Send(resp)
+		}
+	}
+
+	return nil
+}
+
+func (s *Server) GetPolicyObjectStatus(request *a1tadminapi.GetPolicyObjectStatusRequest, server a1tadminapi.A1TAdminService_GetPolicyObjectStatusServer) error {
+	cliLog.Info("Get policy type object status")
+	ctx, cancel := context.WithTimeout(context.Background(), TimeoutTimer)
+	defer cancel()
+
+	var err error
+	tIDs := make([]string, 0)
+	pIDs := make([]string, 0)
+
+	if request.PolicyTypeId == "" {
+		tIDs = s.ctrlBroker.A1PController().HandleGetPolicyTypes(ctx)
+	} else {
+		tIDs = append(tIDs, request.PolicyTypeId)
+	}
+
+	for _, t := range tIDs {
+		if request.PolicyObjectId == "" {
+			pIDs, err = s.ctrlBroker.A1PController().HandleGetPolicytypesPolicyTypeIdPolicies(ctx, t)
+			if err != nil {
+				return err
+			}
+		} else {
+			pIDs = append(pIDs, request.PolicyObjectId)
+		}
+
+		for _, i := range pIDs {
+			obj, err := s.ctrlBroker.A1PController().HandleGetPolicyStatus(ctx, i, t)
+			if err != nil {
+				return err
+			}
+			objJson, err := json.Marshal(obj)
+			if err != nil {
+				return err
+			}
+			resp := &a1tadminapi.GetPolicyObjectStatusResponse{
+				PolicyTypeId:       t,
+				PolicyObjectId:     i,
+				PolicyObjectStatus: string(objJson),
+			}
+			server.Send(resp)
+		}
+	}
+
+	return nil
+}

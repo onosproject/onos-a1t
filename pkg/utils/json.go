@@ -6,6 +6,7 @@ package utils
 
 import (
 	"encoding/json"
+	"fmt"
 	policyschemas "github.com/onosproject/onos-a1-dm/go/policy_schemas"
 	"github.com/onosproject/onos-lib-go/pkg/errors"
 	"github.com/onosproject/onos-lib-go/pkg/logging"
@@ -73,7 +74,7 @@ func PolicyObjListValidate(objs interface{}) (bool, error) {
 			return false, errors.NewNotFound("there is no policy object")
 		}
 
-		targetDoc, err := json.Marshal(objs)
+		targetDoc, err := json.Marshal(objs[0])
 		if err != nil {
 			return false, err
 		}
@@ -83,6 +84,8 @@ func PolicyObjListValidate(objs interface{}) (bool, error) {
 			if err != nil {
 				return false, err
 			}
+
+			fmt.Printf("WKIM (%v): targetDoc: %v / tmpDoc: %v\n", string(targetDoc) == string(tmpDoc), string(targetDoc), string(tmpDoc))
 
 			if string(targetDoc) != string(tmpDoc) {
 				return false, errors.NewConflict("PolicyObject is inconsistent")
@@ -105,6 +108,8 @@ func PolicyObjListValidate(objs interface{}) (bool, error) {
 			if err != nil {
 				return false, err
 			}
+
+			fmt.Printf("WKIM (%v): targetDoc: %v / tmpDoc: %v\n", string(targetDoc) == string(tmpDoc), string(targetDoc), string(tmpDoc))
 
 			if string(targetDoc) != string(tmpDoc) {
 				return false, errors.NewConflict("PolicyObject is inconsistent")

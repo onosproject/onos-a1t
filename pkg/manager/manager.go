@@ -6,6 +6,7 @@ package manager
 
 import (
 	"context"
+	"github.com/onosproject/onos-a1t/pkg/northbound/cli"
 	"github.com/onosproject/onos-a1t/pkg/southbound"
 	"github.com/onosproject/onos-a1t/pkg/store"
 	"github.com/onosproject/onos-a1t/pkg/stream"
@@ -99,7 +100,7 @@ func (m *Manager) startNorthboundServer() error {
 		true,
 		northbound.SecurityConfig{}))
 
-	//s.AddService(nbi.NewService(m.subscriptionStore, m.policyStore, m.eijobsStore))
+	s.AddService(cli.NewService(m.subscriptionStore, m.policyStore, m.eijobsStore, m.broker, m.rnibClient))
 
 	doneCh := make(chan error)
 	go func() {

@@ -38,7 +38,7 @@ func createStream(ctx context.Context, xAppID string, a1Service stream.A1Service
 		streamBroker.AddStream(ctx, nbID)
 		streamBroker.AddStream(ctx, sbID)
 	case stream.EnrichmentInformation:
-		sbID, nbID := stream.GetStreamID(stream.A1EIController, stream.GetEndpointIDWithTargetXAppID(xAppID, stream.PolicyManagement))
+		sbID, nbID := stream.GetStreamID(stream.A1EIController, stream.GetEndpointIDWithTargetXAppID(xAppID, stream.EnrichmentInformation))
 		streamBroker.AddStream(ctx, nbID)
 		streamBroker.AddStream(ctx, sbID)
 	}
@@ -51,7 +51,7 @@ func deleteStream(xAppID string, a1Service stream.A1Service, streamBroker stream
 		streamBroker.Close(nbID)
 		streamBroker.Close(sbID)
 	case stream.EnrichmentInformation:
-		sbID, nbID := stream.GetStreamID(stream.A1EIController, stream.GetEndpointIDWithTargetXAppID(xAppID, stream.PolicyManagement))
+		sbID, nbID := stream.GetStreamID(stream.A1EIController, stream.GetEndpointIDWithTargetXAppID(xAppID, stream.EnrichmentInformation))
 		streamBroker.Close(nbID)
 		streamBroker.Close(sbID)
 	}

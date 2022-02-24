@@ -110,6 +110,7 @@ func (a *a1pController) createEventSubStoreHandler(ctx context.Context, entry *s
 		logA1P.Error(err)
 		return err
 	}
+
 	return nil
 }
 
