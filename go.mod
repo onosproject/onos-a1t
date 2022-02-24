@@ -10,7 +10,7 @@ require (
 	github.com/labstack/echo/v4 v4.6.1
 	github.com/onosproject/helmit v0.6.19
 	github.com/onosproject/onos-a1-dm/go v0.0.3
-	github.com/onosproject/onos-api/go v0.8.50
+	github.com/onosproject/onos-api/go v0.9.4
 	github.com/onosproject/onos-lib-go v0.8.1
 	github.com/onosproject/onos-ric-sdk-go v0.8.4
 	github.com/onosproject/onos-test v0.6.5
@@ -19,4 +19,3 @@ require (
 	github.com/xeipuuv/gojsonschema v1.2.0
 	google.golang.org/grpc v1.41.0
 )
-	
