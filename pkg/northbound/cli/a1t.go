@@ -132,7 +132,10 @@ func (s *Server) GetPolicyTypeObject(request *a1tadminapi.GetPolicyTypeObjectReq
 			PolicyTypeObject: string(pto),
 		}
 
-		server.Send(resp)
+		err = server.Send(resp)
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil
@@ -177,7 +180,10 @@ func (s *Server) GetPolicyObject(request *a1tadminapi.GetPolicyObjectRequest, se
 				PolicyObjectId: i,
 				PolicyObject:   string(objJson),
 			}
-			server.Send(resp)
+			err = server.Send(resp)
+			if err != nil {
+				return err
+			}
 		}
 	}
 
@@ -223,7 +229,10 @@ func (s *Server) GetPolicyObjectStatus(request *a1tadminapi.GetPolicyObjectStatu
 				PolicyObjectId:     i,
 				PolicyObjectStatus: string(objJson),
 			}
-			server.Send(resp)
+			err = server.Send(resp)
+			if err != nil {
+				return err
+			}
 		}
 	}
 
