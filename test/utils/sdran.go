@@ -66,3 +66,75 @@ func CreateA1TXapp(t *testing.T, name string) *helm.HelmRelease {
 
 	return a1txapp
 }
+
+// CreateRanSimulator creates a ran simulator
+func CreateRanSimulator(t *testing.T) *helm.HelmRelease {
+	username, password, err := getCredentials()
+	assert.NoError(t, err)
+
+	simulator := helm.
+		Chart("ran-simulator", onostest.SdranChartRepo).
+		Release("ran-simulator").
+		SetUsername(username).
+		SetPassword(password).
+		Set("image.tag", "latest").
+		Set("fullnameOverride", "")
+	err = simulator.Install(true)
+	assert.NoError(t, err, "could not install device simulator %v", err)
+
+	return simulator
+}
+
+// CreateTSxApp creates a ran simulator
+func CreateTSxApp(t *testing.T) *helm.HelmRelease {
+	username, password, err := getCredentials()
+	assert.NoError(t, err)
+
+	ts := helm.
+		Chart("rimedo-ts", onostest.SdranChartRepo).
+		Release("rimedo-ts").
+		SetUsername(username).
+		SetPassword(password).
+		Set("image.tag", "latest").
+		Set("fullnameOverride", "")
+	err = ts.Install(true)
+	assert.NoError(t, err, "could not install TS xApp %v", err)
+
+	return ts
+}
+
+// CreateA1T creates a ran simulator
+func CreateA1T(t *testing.T) *helm.HelmRelease {
+	username, password, err := getCredentials()
+	assert.NoError(t, err)
+
+	a1t := helm.
+		Chart("onos-a1t", onostest.SdranChartRepo).
+		Release("onos-a1t").
+		SetUsername(username).
+		SetPassword(password).
+		Set("image.tag", "latest").
+		Set("fullnameOverride", "")
+	err = a1t.Install(true)
+	assert.NoError(t, err, "could not install A1T %v", err)
+
+	return a1t
+}
+
+// CreateE2T creates a ran simulator
+func CreateE2T(t *testing.T) *helm.HelmRelease {
+	username, password, err := getCredentials()
+	assert.NoError(t, err)
+
+	e2t := helm.
+		Chart("onos-e2t", onostest.SdranChartRepo).
+		Release("onos-e2t").
+		SetUsername(username).
+		SetPassword(password).
+		Set("image.tag", "latest").
+		Set("fullnameOverride", "")
+	err = e2t.Install(true)
+	assert.NoError(t, err, "could not install E2T %v", err)
+
+	return e2t
+}
