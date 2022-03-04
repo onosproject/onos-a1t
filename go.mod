@@ -12,7 +12,7 @@ require (
 	github.com/onosproject/onos-a1-dm/go v0.0.5
 	github.com/onosproject/onos-api/go v0.9.4
 	github.com/onosproject/onos-lib-go v0.8.12
-	github.com/onosproject/onos-ric-sdk-go v0.8.5
+	github.com/onosproject/onos-ric-sdk-go v0.8.6
 	github.com/onosproject/onos-test v0.6.5
 	github.com/santhosh-tekuri/jsonschema/v5 v5.0.0
 	github.com/stretchr/testify v1.7.0
