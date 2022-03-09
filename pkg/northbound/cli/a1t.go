@@ -23,7 +23,7 @@ import (
 
 const TimeoutTimer = time.Second * 5
 
-var cliLog = logging.GetLogger()
+var log = logging.GetLogger()
 
 // NewService returns a new A1T interface service.
 func NewService(subscriptionStore store.Store, policiesStore store.Store, eijobsStore store.Store, controllerBroker controller.Broker, rnibClient rnib.TopoClient) service.Service {
@@ -66,7 +66,7 @@ type Server struct {
 }
 
 func (s *Server) GetXAppConnections(request *a1tadminapi.GetXAppConnectionsRequest, server a1tadminapi.A1TAdminService_GetXAppConnectionsServer) error {
-	cliLog.Info("Get xApp Connection")
+	log.Info("Get xApp Connection")
 	ch := make(chan *store.Entry)
 	ctx, cancel := context.WithTimeout(context.Background(), TimeoutTimer)
 	defer cancel()
@@ -98,7 +98,7 @@ func (s *Server) GetXAppConnections(request *a1tadminapi.GetXAppConnectionsReque
 }
 
 func (s *Server) GetPolicyTypeObject(request *a1tadminapi.GetPolicyTypeObjectRequest, server a1tadminapi.A1TAdminService_GetPolicyTypeObjectServer) error {
-	cliLog.Info("Get policy type object")
+	log.Info("Get policy type object")
 	ctx, cancel := context.WithTimeout(context.Background(), TimeoutTimer)
 	defer cancel()
 
@@ -143,7 +143,7 @@ func (s *Server) GetPolicyTypeObject(request *a1tadminapi.GetPolicyTypeObjectReq
 }
 
 func (s *Server) GetPolicyObject(request *a1tadminapi.GetPolicyObjectRequest, server a1tadminapi.A1TAdminService_GetPolicyObjectServer) error {
-	cliLog.Info("Get policy object")
+	log.Info("Get policy object")
 	ctx, cancel := context.WithTimeout(context.Background(), TimeoutTimer)
 	defer cancel()
 
@@ -192,7 +192,7 @@ func (s *Server) GetPolicyObject(request *a1tadminapi.GetPolicyObjectRequest, se
 }
 
 func (s *Server) GetPolicyObjectStatus(request *a1tadminapi.GetPolicyObjectStatusRequest, server a1tadminapi.A1TAdminService_GetPolicyObjectStatusServer) error {
-	cliLog.Info("Get policy type object status")
+	log.Info("Get policy type object status")
 	ctx, cancel := context.WithTimeout(context.Background(), TimeoutTimer)
 	defer cancel()
 
