@@ -6,14 +6,15 @@ package southbound
 
 import (
 	"context"
+	"sync"
+
 	sbclient "github.com/onosproject/onos-a1t/pkg/southbound/client"
 	"github.com/onosproject/onos-a1t/pkg/store"
 	"github.com/onosproject/onos-a1t/pkg/stream"
 	"github.com/onosproject/onos-lib-go/pkg/logging"
-	"sync"
 )
 
-var log = logging.GetLogger("southbound")
+var log = logging.GetLogger()
 
 func NewSouthboundManager(broker stream.Broker, subStore store.Store) Manager {
 	return &manager{

@@ -6,6 +6,7 @@ package subscription
 
 import (
 	"context"
+
 	"github.com/onosproject/onos-a1t/pkg/rnib"
 	"github.com/onosproject/onos-a1t/pkg/store"
 
@@ -13,7 +14,7 @@ import (
 	"github.com/onosproject/onos-lib-go/pkg/logging"
 )
 
-var log = logging.GetLogger("subscription")
+var log = logging.GetLogger()
 
 type Manager struct {
 	subscriptionStore store.Store

@@ -6,15 +6,16 @@ package sbclient
 
 import (
 	"context"
+	"io"
+
 	"github.com/google/uuid"
 	"github.com/onosproject/onos-a1t/pkg/stream"
 	"github.com/onosproject/onos-api/go/onos/a1t/a1"
 	"github.com/onosproject/onos-lib-go/pkg/errors"
 	"github.com/onosproject/onos-lib-go/pkg/logging"
-	"io"
 )
 
-var a1eiLog = logging.GetLogger("southbound", "a1ei-client")
+var log = logging.GetLogger()
 
 func NewA1EIClient(ctx context.Context, targetXAppID string, ipAddress string, port uint32, streamBroker stream.Broker) (Client, error) {
 	// create gRPC client
@@ -55,7 +56,7 @@ func (a *a1eiClient) Run(ctx context.Context) error {
 
 	err = a.runOutgoingMsgDispatcher(ctx)
 	if err != nil {
-		a1eiLog.Warn(err)
+		log.Warn(err)
 		a.Close()
 		return err
 	}
@@ -97,7 +98,7 @@ func (a *a1eiClient) createSessions(ctx context.Context) error {
 func (a *a1eiClient) createEIQuerySession(ctx context.Context) error {
 	s, err := a.grpcClient.EIQuery(ctx)
 	if err != nil {
-		a1eiLog.Warn(err)
+		log.Warn(err)
 		return err
 	}
 
@@ -108,7 +109,7 @@ func (a *a1eiClient) createEIQuerySession(ctx context.Context) error {
 func (a *a1eiClient) createEIJobSetupSession(ctx context.Context) error {
 	s, err := a.grpcClient.EIJobSetup(ctx)
 	if err != nil {
-		a1eiLog.Warn(err)
+		log.Warn(err)
 		return err
 	}
 
@@ -119,7 +120,7 @@ func (a *a1eiClient) createEIJobSetupSession(ctx context.Context) error {
 func (a *a1eiClient) createEIJobUpdateSession(ctx context.Context) error {
 	s, err := a.grpcClient.EIJobUpdate(ctx)
 	if err != nil {
-		a1eiLog.Warn(err)
+		log.Warn(err)
 		return err
 	}
 
@@ -130,7 +131,7 @@ func (a *a1eiClient) createEIJobUpdateSession(ctx context.Context) error {
 func (a *a1eiClient) createEIJobDeleteSession(ctx context.Context) error {
 	s, err := a.grpcClient.EIJobDelete(ctx)
 	if err != nil {
-		a1eiLog.Warn(err)
+		log.Warn(err)
 		return err
 	}
 
@@ -141,7 +142,7 @@ func (a *a1eiClient) createEIJobDeleteSession(ctx context.Context) error {
 func (a *a1eiClient) createEIJobStatusQuerySession(ctx context.Context) error {
 	s, err := a.grpcClient.EIJobStatusQuery(ctx)
 	if err != nil {
-		a1eiLog.Warn(err)
+		log.Warn(err)
 		return err
 	}
 
@@ -162,27 +163,27 @@ func (a *a1eiClient) incomingEIQueryForwarder(ctx context.Context) {
 	for {
 		select {
 		case <-ctx.Done():
-			a1eiLog.Warn("A1EI SBI client incoming forwarder for EI Query service is just closed")
+			log.Warn("A1EI SBI client incoming forwarder for EI Query service is just closed")
 			return
 		default:
 			if _, ok := a.sessions[stream.EIQuery]; !ok {
-				a1eiLog.Warn("A1EI SBI client incoming forwarder for EI Query service is just closed")
+				log.Warn("A1EI SBI client incoming forwarder for EI Query service is just closed")
 				return
 			}
 			msg, err := a.sessions[stream.EIQuery].(a1.EIService_EIQueryClient).Recv()
 			if err == io.EOF || err == context.Canceled {
-				a1eiLog.Warn("A1EI SBI client incoming forwarder for EI Query service is just closed")
+				log.Warn("A1EI SBI client incoming forwarder for EI Query service is just closed")
 				return
 			}
 			if err != nil {
-				a1eiLog.Warn(err)
+				log.Warn(err)
 				return
 			}
 			sbMessage := stream.NewSBStreamMessage(a.targetXAppID, stream.EIRequestMessage, stream.EIQuery, stream.EnrichmentInformation, msg)
 			_, nbID := stream.GetStreamID(stream.A1EIController, stream.GetEndpointIDWithTargetXAppID(a.targetXAppID, stream.EnrichmentInformation))
 			err = a.streamBroker.Send(nbID, sbMessage)
 			if err != nil {
-				a1eiLog.Warn(err)
+				log.Warn(err)
 			}
 		}
 	}
@@ -193,27 +194,27 @@ func (a *a1eiClient) incomingEIJobSetupForwarder(ctx context.Context) {
 	for {
 		select {
 		case <-ctx.Done():
-			a1eiLog.Warn("A1EI SBI client incoming forwarder for EI Job Setup service is just closed")
+			log.Warn("A1EI SBI client incoming forwarder for EI Job Setup service is just closed")
 			return
 		default:
 			if _, ok := a.sessions[stream.EIJobSetup]; !ok {
-				a1eiLog.Warn("A1EI SBI client incoming forwarder for EI Job Setup service is just closed")
+				log.Warn("A1EI SBI client incoming forwarder for EI Job Setup service is just closed")
 				return
 			}
 			msg, err := a.sessions[stream.EIJobSetup].(a1.EIService_EIJobSetupClient).Recv()
 			if err == io.EOF || err == context.Canceled {
-				a1eiLog.Warn("A1EI SBI client incoming forwarder for EI Job Setup service is just closed")
+				log.Warn("A1EI SBI client incoming forwarder for EI Job Setup service is just closed")
 				return
 			}
 			if err != nil {
-				a1eiLog.Warn(err)
+				log.Warn(err)
 				return
 			}
 			sbMessage := stream.NewSBStreamMessage(a.targetXAppID, stream.EIRequestMessage, stream.EIJobSetup, stream.EnrichmentInformation, msg)
 			_, nbID := stream.GetStreamID(stream.A1EIController, stream.GetEndpointIDWithTargetXAppID(a.targetXAppID, stream.EnrichmentInformation))
 			err = a.streamBroker.Send(nbID, sbMessage)
 			if err != nil {
-				a1eiLog.Warn(err)
+				log.Warn(err)
 			}
 		}
 	}
@@ -224,27 +225,27 @@ func (a *a1eiClient) incomingEIJobUpdateForwarder(ctx context.Context) {
 	for {
 		select {
 		case <-ctx.Done():
-			a1eiLog.Warn("A1EI SBI client incoming forwarder for EI Job Update service is just closed")
+			log.Warn("A1EI SBI client incoming forwarder for EI Job Update service is just closed")
 			return
 		default:
 			if _, ok := a.sessions[stream.EIJobUpdate]; !ok {
-				a1eiLog.Warn("A1EI SBI client incoming forwarder for EI Job Update service is just closed")
+				log.Warn("A1EI SBI client incoming forwarder for EI Job Update service is just closed")
 				return
 			}
 			msg, err := a.sessions[stream.EIJobUpdate].(a1.EIService_EIJobUpdateClient).Recv()
 			if err == io.EOF || err == context.Canceled {
-				a1eiLog.Warn("A1EI SBI client incoming forwarder for EI Job Update service is just closed")
+				log.Warn("A1EI SBI client incoming forwarder for EI Job Update service is just closed")
 				return
 			}
 			if err != nil {
-				a1eiLog.Warn(err)
+				log.Warn(err)
 				return
 			}
 			sbMessage := stream.NewSBStreamMessage(a.targetXAppID, stream.EIRequestMessage, stream.EIJobUpdate, stream.EnrichmentInformation, msg)
 			_, nbID := stream.GetStreamID(stream.A1EIController, stream.GetEndpointIDWithTargetXAppID(a.targetXAppID, stream.EnrichmentInformation))
 			err = a.streamBroker.Send(nbID, sbMessage)
 			if err != nil {
-				a1eiLog.Warn(err)
+				log.Warn(err)
 			}
 		}
 	}
@@ -255,27 +256,27 @@ func (a *a1eiClient) incomingEIJobDeleteForwarder(ctx context.Context) {
 	for {
 		select {
 		case <-ctx.Done():
-			a1eiLog.Warn("A1EI SBI client incoming forwarder for EI Job Delete service is just closed")
+			log.Warn("A1EI SBI client incoming forwarder for EI Job Delete service is just closed")
 			return
 		default:
 			if _, ok := a.sessions[stream.EIJobDelete]; !ok {
-				a1eiLog.Warn("A1EI SBI client incoming forwarder for EI Job Delete service is just closed")
+				log.Warn("A1EI SBI client incoming forwarder for EI Job Delete service is just closed")
 				return
 			}
 			msg, err := a.sessions[stream.EIJobDelete].(a1.EIService_EIJobDeleteClient).Recv()
 			if err == io.EOF || err == context.Canceled {
-				a1eiLog.Warn("A1EI SBI client incoming forwarder for EI Job Delete service is just closed")
+				log.Warn("A1EI SBI client incoming forwarder for EI Job Delete service is just closed")
 				return
 			}
 			if err != nil {
-				a1eiLog.Warn(err)
+				log.Warn(err)
 				return
 			}
 			sbMessage := stream.NewSBStreamMessage(a.targetXAppID, stream.EIRequestMessage, stream.EIJobDelete, stream.EnrichmentInformation, msg)
 			_, nbID := stream.GetStreamID(stream.A1EIController, stream.GetEndpointIDWithTargetXAppID(a.targetXAppID, stream.EnrichmentInformation))
 			err = a.streamBroker.Send(nbID, sbMessage)
 			if err != nil {
-				a1eiLog.Warn(err)
+				log.Warn(err)
 			}
 		}
 	}
@@ -286,27 +287,27 @@ func (a *a1eiClient) incomingEIJobStatusQueryForwarder(ctx context.Context) {
 	for {
 		select {
 		case <-ctx.Done():
-			a1eiLog.Warn("A1EI SBI client incoming forwarder for EI Job Status Query service is just closed")
+			log.Warn("A1EI SBI client incoming forwarder for EI Job Status Query service is just closed")
 			return
 		default:
 			if _, ok := a.sessions[stream.EIJobStatusQuery]; !ok {
-				a1eiLog.Warn("A1EI SBI client incoming forwarder for EI Job Status Query service is just closed")
+				log.Warn("A1EI SBI client incoming forwarder for EI Job Status Query service is just closed")
 				return
 			}
 			msg, err := a.sessions[stream.EIJobStatusQuery].(a1.EIService_EIJobStatusQueryClient).Recv()
 			if err == io.EOF || err == context.Canceled {
-				a1eiLog.Warn("A1EI SBI client incoming forwarder for EI Job Status Query service is just closed")
+				log.Warn("A1EI SBI client incoming forwarder for EI Job Status Query service is just closed")
 				return
 			}
 			if err != nil {
-				a1eiLog.Warn(err)
+				log.Warn(err)
 				return
 			}
 			sbMessage := stream.NewSBStreamMessage(a.targetXAppID, stream.EIRequestMessage, stream.EIJobStatusQuery, stream.EnrichmentInformation, msg)
 			_, nbID := stream.GetStreamID(stream.A1EIController, stream.GetEndpointIDWithTargetXAppID(a.targetXAppID, stream.EnrichmentInformation))
 			err = a.streamBroker.Send(nbID, sbMessage)
 			if err != nil {
-				a1eiLog.Warn(err)
+				log.Warn(err)
 			}
 		}
 	}
@@ -337,38 +338,38 @@ func (a *a1eiClient) outgoingMsgDispatcher(ctx context.Context, msg *stream.SBSt
 	case stream.EIQuery:
 		err = a.sessions[stream.EIQuery].(a1.EIService_EIQueryClient).Send(msg.Payload.(*a1.EIResultMessage))
 		if err != nil {
-			a1eiLog.Warn(err)
+			log.Warn(err)
 		}
 	case stream.EIJobSetup:
 		err = a.sessions[stream.EIJobSetup].(a1.EIService_EIJobSetupClient).Send(msg.Payload.(*a1.EIResultMessage))
 		if err != nil {
-			a1eiLog.Warn(err)
+			log.Warn(err)
 		}
 	case stream.EIJobUpdate:
 		err = a.sessions[stream.EIJobUpdate].(a1.EIService_EIJobUpdateClient).Send(msg.Payload.(*a1.EIResultMessage))
 		if err != nil {
-			a1eiLog.Warn(err)
+			log.Warn(err)
 		}
 	case stream.EIJobDelete:
 		err = a.sessions[stream.EIJobDelete].(a1.EIService_EIJobDeleteClient).Send(msg.Payload.(*a1.EIResultMessage))
 		if err != nil {
-			a1eiLog.Warn(err)
+			log.Warn(err)
 		}
 	case stream.EIJobStatusQuery:
 		err = a.sessions[stream.EIJobStatusQuery].(a1.EIService_EIJobStatusQueryClient).Send(msg.Payload.(*a1.EIResultMessage))
 		if err != nil {
-			a1eiLog.Warn(err)
+			log.Warn(err)
 		}
 	case stream.EIJobStatusNotify:
 		ack, err := a.grpcClient.EIJobStatusNotify(ctx, msg.Payload.(*a1.EIStatusMessage))
 		if err != nil {
-			a1eiLog.Warn(err)
+			log.Warn(err)
 		}
 		a.forwardResponseMsg(ack, stream.EIAckMessage, stream.EIJobStatusNotify)
 	case stream.EIJobResultDelivery:
 		ack, err := a.grpcClient.EIJobResultDelivery(ctx, msg.Payload.(*a1.EIResultMessage))
 		if err != nil {
-			a1eiLog.Warn(err)
+			log.Warn(err)
 		}
 		a.forwardResponseMsg(ack, stream.EIAckMessage, stream.EIJobResultDelivery)
 	}
@@ -379,7 +380,7 @@ func (a *a1eiClient) forwardResponseMsg(msg interface{}, messageType stream.A1SB
 	_, nbID := stream.GetStreamID(stream.A1EIController, stream.GetEndpointIDWithTargetXAppID(a.targetXAppID, stream.EnrichmentInformation))
 	err := a.streamBroker.Send(nbID, sbMessage)
 	if err != nil {
-		a1pLog.Warn(err)
+		log.Warn(err)
 	}
 }
 

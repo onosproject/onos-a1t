@@ -7,20 +7,21 @@ package utils
 import (
 	"encoding/json"
 	"fmt"
+
 	policyschemas "github.com/onosproject/onos-a1-dm/go/policy_schemas"
 	"github.com/onosproject/onos-lib-go/pkg/errors"
 	"github.com/onosproject/onos-lib-go/pkg/logging"
 	"github.com/xeipuuv/gojsonschema"
 )
 
-var jsonValLog = logging.GetLogger("utils", "json-validator")
+var log = logging.GetLogger()
 
 const NotificationDestination = "notificationDestination"
 
 func JsonValidateWithTypeID(policyTypeID string, jsonDoc string) bool {
 	schemeDoc, ok := policyschemas.PolicySchemas[policyTypeID]
 	if !ok {
-		jsonValLog.Errorf("Policy ID %v not supports", policyTypeID)
+		log.Errorf("Policy ID %v not supports", policyTypeID)
 	}
 
 	return JsonValidate(schemeDoc, jsonDoc)
@@ -31,7 +32,7 @@ func JsonValidate(schemaDoc string, jsonDoc string) bool {
 	documentLoader := gojsonschema.NewStringLoader(jsonDoc)
 	result, err := gojsonschema.Validate(schemaLoader, documentLoader)
 	if err != nil {
-		jsonValLog.Error(err)
+		log.Error(err)
 		return false
 	}
 
@@ -40,7 +41,7 @@ func JsonValidate(schemaDoc string, jsonDoc string) bool {
 	}
 
 	for _, desc := range result.Errors() {
-		jsonValLog.Error(desc)
+		log.Error(desc)
 	}
 	return false
 }
@@ -49,7 +50,7 @@ func ConvertStringFormatJsonToMap(doc string) map[string]interface{} {
 	var result map[string]interface{}
 	err := json.Unmarshal([]byte(doc), &result)
 	if err != nil {
-		jsonValLog.Error(err)
+		log.Error(err)
 		return nil
 	}
 	return result

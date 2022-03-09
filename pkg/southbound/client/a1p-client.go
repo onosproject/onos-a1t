@@ -6,16 +6,14 @@ package sbclient
 
 import (
 	"context"
+	"io"
+	"time"
+
 	"github.com/google/uuid"
 	"github.com/onosproject/onos-a1t/pkg/stream"
 	"github.com/onosproject/onos-api/go/onos/a1t/a1"
 	"github.com/onosproject/onos-lib-go/pkg/errors"
-	"github.com/onosproject/onos-lib-go/pkg/logging"
-	"io"
-	"time"
 )
-
-var a1pLog = logging.GetLogger("southbound", "a1p-client")
 
 func NewA1PClient(ctx context.Context, targetXAppID string, ipAddress string, port uint32, streamBroker stream.Broker) (Client, error) {
 	// create gRPC client
@@ -57,7 +55,7 @@ func (a *a1pClient) Run(ctx context.Context) error {
 	err = a.runOutgoingMsgDispatcher(ctx)
 
 	if err != nil {
-		a1pLog.Warn(err)
+		log.Warn(err)
 		a.Close()
 		return err
 	}
@@ -92,27 +90,27 @@ func (a *a1pClient) incomingPolicyStatusForwarder(ctx context.Context) {
 	for {
 		select {
 		case <-ctx.Done():
-			a1pLog.Warn("A1P SBI client incoming forwarder for Policy Status service is just closed")
+			log.Warn("A1P SBI client incoming forwarder for Policy Status service is just closed")
 			return
 		default:
 			if _, ok := a.sessions[stream.PolicyStatus]; !ok {
-				a1pLog.Warn("A1P SBI client incoming forwarder for Policy Status service is just closed")
+				log.Warn("A1P SBI client incoming forwarder for Policy Status service is just closed")
 				return
 			}
 			msg, err := a.sessions[stream.PolicyStatus].(a1.PolicyService_PolicyStatusClient).Recv()
 			if err == io.EOF || err == context.Canceled {
-				a1pLog.Warn("A1P SBI client incoming forwarder for Policy Status service is just closed")
+				log.Warn("A1P SBI client incoming forwarder for Policy Status service is just closed")
 				return
 			}
 			if err != nil {
-				a1pLog.Warn(err)
+				log.Warn(err)
 				return
 			}
 			sbMessage := stream.NewSBStreamMessage(a.targetXAppID, stream.PolicyStatusMessage, stream.PolicyStatus, stream.PolicyManagement, msg)
 			_, nbID := stream.GetStreamID(stream.A1PController, stream.GetEndpointIDWithTargetXAppID(a.targetXAppID, stream.PolicyManagement))
 			err = a.streamBroker.Send(nbID, sbMessage)
 			if err != nil {
-				a1pLog.Warn(err)
+				log.Warn(err)
 			}
 		}
 	}
@@ -138,55 +136,55 @@ func (a *a1pClient) runOutgoingMsgDispatcher(ctx context.Context) error {
 }
 
 func (a *a1pClient) outgoingMsgDispatcher(ctx context.Context, msg *stream.SBStreamMessage) {
-	a1pLog.Infof("Received message from controller: %v", *msg)
+	log.Infof("Received message from controller: %v", *msg)
 	tCtx, tCancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer tCancel()
 	var err error
 	switch msg.A1SBIRPCType {
 	case stream.PolicySetup:
-		a1pLog.Info("Sending PolicySetup Request message")
+		log.Info("Sending PolicySetup Request message")
 		result, err := a.grpcClient.PolicySetup(tCtx, msg.Payload.(*a1.PolicyRequestMessage))
 		if err != nil {
-			a1pLog.Warn(err)
+			log.Warn(err)
 		}
 		a.forwardResponseMsg(result, stream.PolicyResultMessage, stream.PolicySetup)
 	case stream.PolicyUpdate:
-		a1pLog.Info("Sending PolicyUpdate Request message")
+		log.Info("Sending PolicyUpdate Request message")
 		result, err := a.grpcClient.PolicyUpdate(tCtx, msg.Payload.(*a1.PolicyRequestMessage))
 		if err != nil {
-			a1pLog.Warn(err)
+			log.Warn(err)
 		}
 		a.forwardResponseMsg(result, stream.PolicyResultMessage, stream.PolicyUpdate)
 	case stream.PolicyDelete:
-		a1pLog.Info("Sending PolicyDelete Request message")
+		log.Info("Sending PolicyDelete Request message")
 		result, err := a.grpcClient.PolicyDelete(tCtx, msg.Payload.(*a1.PolicyRequestMessage))
 		if err != nil {
-			a1pLog.Warn(err)
+			log.Warn(err)
 		}
 		a.forwardResponseMsg(result, stream.PolicyResultMessage, stream.PolicyDelete)
 	case stream.PolicyQuery:
-		a1pLog.Info("Sending PolicyQuery Request message")
+		log.Info("Sending PolicyQuery Request message")
 		result, err := a.grpcClient.PolicyQuery(tCtx, msg.Payload.(*a1.PolicyRequestMessage))
 		if err != nil {
-			a1pLog.Warn(err)
+			log.Warn(err)
 		}
 		a.forwardResponseMsg(result, stream.PolicyResultMessage, stream.PolicyQuery)
 	case stream.PolicyStatus:
-		a1pLog.Info("Sending PolicAck message")
+		log.Info("Sending PolicAck message")
 		err = a.sessions[stream.PolicyStatus].(a1.PolicyService_PolicyStatusClient).Send(msg.Payload.(*a1.PolicyAckMessage))
 		if err != nil {
-			a1pLog.Warn(err)
+			log.Warn(err)
 		}
 	}
 }
 
 func (a *a1pClient) forwardResponseMsg(msg interface{}, messageType stream.A1SBIMessageType, rpcType stream.A1SBIRPCType) {
-	a1pLog.Info("Forwarding response message")
+	log.Info("Forwarding response message")
 	sbMessage := stream.NewSBStreamMessage(a.targetXAppID, messageType, rpcType, stream.PolicyManagement, msg)
 	_, nbID := stream.GetStreamID(stream.A1PController, stream.GetEndpointIDWithTargetXAppID(a.targetXAppID, stream.PolicyManagement))
 	err := a.streamBroker.Send(nbID, sbMessage)
 	if err != nil {
-		a1pLog.Warn(err)
+		log.Warn(err)
 	}
 }
 

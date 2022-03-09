@@ -19,7 +19,7 @@ import (
 	toposdk "github.com/onosproject/onos-ric-sdk-go/pkg/topo"
 )
 
-var log = logging.GetLogger("rnib")
+var log = logging.GetLogger()
 
 type TopoClient interface {
 	WatchTopoXapps(ctx context.Context, ch chan topoapi.Event) error

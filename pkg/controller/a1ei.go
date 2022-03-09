@@ -7,6 +7,7 @@ package controller
 import (
 	"context"
 	"fmt"
+
 	"github.com/onosproject/onos-a1t/pkg/rnib"
 	"github.com/onosproject/onos-a1t/pkg/store"
 	"github.com/onosproject/onos-a1t/pkg/stream"
@@ -15,12 +16,12 @@ import (
 	a1einbi "github.com/onosproject/onos-a1t/pkg/northbound/a1ap/enrichment_information"
 )
 
-var logA1EI = logging.GetLogger("controller", "a1ei")
+var log = logging.GetLogger()
 
 func NewA1EIController(nonRTRICURL string, subscriptionStore store.Store, eijobsStore store.Store, rnibClient rnib.TopoClient, streamBroker stream.Broker) A1EIController {
 	nbiClient, err := a1einbi.NewClientWithResponses(nonRTRICURL)
 	if err != nil {
-		logA1EI.Fatal(err)
+		log.Fatal(err)
 	}
 
 	return &a1eiController{

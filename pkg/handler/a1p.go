@@ -23,7 +23,7 @@ type a1pWraper struct {
 	a1pController controller.A1PController
 }
 
-var a1pLog = logging.GetLogger("handler", "a1p")
+var log = logging.GetLogger()
 
 func SetRESTA1PWraper(e *echo.Echo, version string, a1pController controller.A1PController) {
 	wraper := &a1pWraper{
@@ -43,7 +43,7 @@ func (a1pw *a1pWraper) GetPolicytypes(ctx echo.Context) error {
 func (a1pw *a1pWraper) GetPolicytypesPolicyTypeId(ctx echo.Context, policyTypeId a1p.PolicyTypeId) error {
 	policyTypeSchema, statusSchema, err := a1pw.a1pController.HandleGetPolicytypesPolicyTypeId(ctx.Request().Context(), string(policyTypeId))
 	if err != nil {
-		a1pLog.Error(err)
+		log.Error(err)
 		return ctx.JSONPretty(http.StatusBadRequest, err.Error(), "  ")
 	}
 
@@ -59,7 +59,7 @@ func (a1pw *a1pWraper) GetPolicytypesPolicyTypeId(ctx echo.Context, policyTypeId
 func (a1pw *a1pWraper) GetPolicytypesPolicyTypeIdPolicies(ctx echo.Context, policyTypeId a1p.PolicyTypeId) error {
 	a1pEntriesValues, err := a1pw.a1pController.HandleGetPolicytypesPolicyTypeIdPolicies(ctx.Request().Context(), string(policyTypeId))
 	if err != nil {
-		a1pLog.Error(err)
+		log.Error(err)
 		return ctx.JSONPretty(http.StatusBadRequest, err.Error(), "  ")
 	}
 
@@ -71,7 +71,7 @@ func (a1pw *a1pWraper) DeletePolicytypesPolicyTypeIdPoliciesPolicyId(ctx echo.Co
 	err := a1pw.a1pController.HandlePolicyDelete(ctx.Request().Context(), string(policyId), string(policyTypeId))
 
 	if err != nil {
-		a1pLog.Error(err)
+		log.Error(err)
 		return ctx.JSONPretty(http.StatusBadRequest, err.Error(), "  ")
 	}
 
@@ -82,7 +82,7 @@ func (a1pw *a1pWraper) DeletePolicytypesPolicyTypeIdPoliciesPolicyId(ctx echo.Co
 func (a1pw *a1pWraper) GetPolicytypesPolicyTypeIdPoliciesPolicyId(ctx echo.Context, policyTypeId a1p.PolicyTypeId, policyId a1p.PolicyId) error {
 	a1pEntryValue, err := a1pw.a1pController.HandleGetPolicy(ctx.Request().Context(), string(policyId), string(policyTypeId))
 	if err != nil {
-		a1pLog.Error(err)
+		log.Error(err)
 		return ctx.JSONPretty(http.StatusBadRequest, err.Error(), "  ")
 	}
 
@@ -99,7 +99,7 @@ func (a1pw *a1pWraper) PutPolicytypesPolicyTypeIdPoliciesPolicyId(ctx echo.Conte
 	}
 
 	if err := ctx.Bind(&policyObject); err != nil {
-		a1pLog.Error(err)
+		log.Error(err)
 		return ctx.JSONPretty(http.StatusOK, err.Error(), "  ")
 	}
 
@@ -107,18 +107,18 @@ func (a1pw *a1pWraper) PutPolicytypesPolicyTypeIdPoliciesPolicyId(ctx echo.Conte
 
 	obj, err := json.Marshal(policyObject)
 	if err != nil {
-		a1pLog.Error(err)
+		log.Error(err)
 		return ctx.JSONPretty(http.StatusServiceUnavailable, err.Error(), "  ")
 	}
 
 	if !utils.JsonValidateWithTypeID(string(policyTypeId), string(obj)) {
-		a1pLog.Error(errors.NewInvalid("PolicyObject validation failed: policyObject %v", policyObject).Error())
+		log.Error(errors.NewInvalid("PolicyObject validation failed: policyObject %v", policyObject).Error())
 		return ctx.JSONPretty(http.StatusServiceUnavailable, errors.NewInvalid("PolicyObject validation failed: policyObject %v", policyObject).Error(), "  ")
 	}
 
 	a1pEntriesValues, err := a1pw.a1pController.HandleGetPolicytypesPolicyTypeIdPolicies(ctx.Request().Context(), string(policyTypeId))
 	if err != nil {
-		a1pLog.Error(err)
+		log.Error(err)
 		return ctx.JSONPretty(http.StatusServiceUnavailable, err.Error(), "  ")
 	}
 
@@ -133,7 +133,7 @@ func (a1pw *a1pWraper) PutPolicytypesPolicyTypeIdPoliciesPolicyId(ctx echo.Conte
 	if hasPolicyID {
 		err = a1pw.a1pController.HandlePolicyUpdate(ctx.Request().Context(), string(policyId), string(policyTypeId), paramsMap, policyObject)
 		if err != nil {
-			a1pLog.Error(err)
+			log.Error(err)
 			return ctx.JSONPretty(http.StatusServiceUnavailable, err.Error(), "  ")
 		}
 		return ctx.JSONPretty(http.StatusOK, policyObject, "  ")
@@ -141,7 +141,7 @@ func (a1pw *a1pWraper) PutPolicytypesPolicyTypeIdPoliciesPolicyId(ctx echo.Conte
 
 	err = a1pw.a1pController.HandlePolicyCreate(ctx.Request().Context(), string(policyId), string(policyTypeId), paramsMap, policyObject)
 	if err != nil {
-		a1pLog.Error(err)
+		log.Error(err)
 		return ctx.JSONPretty(http.StatusServiceUnavailable, err.Error(), "  ")
 	}
 	return ctx.JSONPretty(http.StatusCreated, policyObject, "  ")
@@ -151,7 +151,7 @@ func (a1pw *a1pWraper) PutPolicytypesPolicyTypeIdPoliciesPolicyId(ctx echo.Conte
 func (a1pw *a1pWraper) GetPolicytypesPolicyTypeIdPoliciesPolicyIdStatus(ctx echo.Context, policyTypeId a1p.PolicyTypeId, policyId a1p.PolicyId) error {
 	a1pPolicyStatus, err := a1pw.a1pController.HandleGetPolicyStatus(ctx.Request().Context(), string(policyId), string(policyTypeId))
 	if err != nil {
-		a1pLog.Error(err)
+		log.Error(err)
 		return ctx.JSONPretty(http.StatusBadRequest, err.Error(), "  ")
 	}
 
