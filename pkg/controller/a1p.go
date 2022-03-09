@@ -8,6 +8,8 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"net/http"
+
 	"github.com/google/uuid"
 	policyschemas "github.com/onosproject/onos-a1-dm/go/policy_schemas"
 	policystatusv2 "github.com/onosproject/onos-a1-dm/go/policy_status/v2"
@@ -17,11 +19,7 @@ import (
 	"github.com/onosproject/onos-a1t/pkg/utils"
 	"github.com/onosproject/onos-api/go/onos/a1t/a1"
 	"github.com/onosproject/onos-lib-go/pkg/errors"
-	"github.com/onosproject/onos-lib-go/pkg/logging"
-	"net/http"
 )
-
-var logA1P = logging.GetLogger("controller", "a1p")
 
 func NewA1PController(subscriptionStore store.Store, rnibClient rnib.TopoClient, streamBroker stream.Broker) A1PController {
 	return &a1pController{
@@ -54,13 +52,13 @@ func (a *a1pController) Receiver(ctx context.Context) error {
 }
 
 func (a *a1pController) watchSubStore(ctx context.Context) error {
-	logA1P.Info("Start watching subscription store at a1p controller")
+	log.Info("Start watching subscription store at a1p controller")
 	ch := make(chan store.Event)
 	go a.subStoreListener(ctx, ch)
 	err := a.subscriptionStore.Watch(ctx, ch)
 	if err != nil {
 		close(ch)
-		logA1P.Error(err)
+		log.Error(err)
 		return err
 	}
 	return nil
@@ -74,19 +72,19 @@ func (a *a1pController) subStoreListener(ctx context.Context, ch chan store.Even
 		case store.Created:
 			err = a.createEventSubStoreHandler(ctx, entry)
 			if err != nil {
-				logA1P.Warn(err)
+				log.Warn(err)
 			}
 		case store.Deleted:
 			err = a.deleteEventSubStoreHandler(ctx, entry)
 			if err != nil {
-				logA1P.Warn(err)
+				log.Warn(err)
 			}
 		}
 	}
 }
 
 func (a *a1pController) createEventSubStoreHandler(ctx context.Context, entry *store.Entry) error {
-	logA1P.Infof("Subscription store entry %v was just created or updated", *entry)
+	log.Infof("Subscription store entry %v was just created or updated", *entry)
 	key := entry.Key.(store.SubscriptionKey)
 	targetXAppID := string(key.TargetXAppID)
 	msgCh := make(chan *stream.SBStreamMessage)
@@ -98,16 +96,16 @@ func (a *a1pController) createEventSubStoreHandler(ctx context.Context, entry *s
 		for msg := range msgCh {
 			err := a.dispatchReceivedMsg(ctx, msg)
 			if err != nil {
-				logA1P.Error(err)
+				log.Error(err)
 			}
 		}
 	}(msgCh)
 
 	watcherID := uuid.New()
-	logA1P.Infof("New watcher %v added", watcherID)
+	log.Infof("New watcher %v added", watcherID)
 	err := a.streamBroker.Watch(nbID, msgCh, watcherID)
 	if err != nil {
-		logA1P.Error(err)
+		log.Error(err)
 		return err
 	}
 
@@ -115,16 +113,16 @@ func (a *a1pController) createEventSubStoreHandler(ctx context.Context, entry *s
 }
 
 func (a *a1pController) deleteEventSubStoreHandler(ctx context.Context, entry *store.Entry) error {
-	logA1P.Infof("Subscription store entry %v was just deleted", *entry)
+	log.Infof("Subscription store entry %v was just deleted", *entry)
 	// nothing to do with it - stream delete process should be running in southbound manager
 	// for the future, if necessary, it should have
 	return nil
 }
 
 func (a *a1pController) dispatchReceivedMsg(ctx context.Context, sbMessage *stream.SBStreamMessage) error {
-	logA1P.Infof("Received msg: %v", sbMessage)
+	log.Infof("Received msg: %v", sbMessage)
 	if sbMessage.A1SBIRPCType == stream.PolicyStatus && sbMessage.A1SBIMessageType == stream.PolicyStatusMessage {
-		logA1P.Infof("Received status msg: %v", sbMessage)
+		log.Infof("Received status msg: %v", sbMessage)
 		msg := sbMessage.Payload.(*a1.PolicyStatusMessage)
 		uri := msg.NotificationDestination
 		payload := msg.Message.Payload
@@ -149,7 +147,7 @@ func (a *a1pController) dispatchReceivedMsg(ctx context.Context, sbMessage *stre
 				Success: true,
 			}
 		}
-		logA1P.Infof("PolicyStatus forwarding Resp: %v", resp)
+		log.Infof("PolicyStatus forwarding Resp: %v", resp)
 		ackSbMessage := stream.NewSBStreamMessage(sbMessage.TargetXAppID, stream.PolicyAckMessage, sbMessage.A1SBIRPCType, stream.PolicyManagement, ack)
 		err = a.streamBroker.Send(sbID, ackSbMessage)
 		if err != nil {
@@ -162,11 +160,11 @@ func (a *a1pController) dispatchReceivedMsg(ctx context.Context, sbMessage *stre
 func (a *a1pController) HandlePolicyCreate(ctx context.Context, policyID, policyTypeID string, params map[string]string, policyObject map[string]interface{}) error {
 	targetXAppIDs, err := a.rnibClient.GetXAppIDsForPolicyTypeID(ctx, policyTypeID)
 	if err != nil {
-		logA1P.Error(err)
+		log.Error(err)
 		return err
 	}
 
-	logA1P.Infof("targetXAppIDs %v for policyTypeID %v", targetXAppIDs, policyTypeID)
+	log.Infof("targetXAppIDs %v for policyTypeID %v", targetXAppIDs, policyTypeID)
 
 	var resErr error = nil
 
@@ -174,7 +172,7 @@ func (a *a1pController) HandlePolicyCreate(ctx context.Context, policyID, policy
 		requestID := uuid.New().String()
 		obj, err := json.Marshal(policyObject)
 		if err != nil {
-			logA1P.Error(err)
+			log.Error(err)
 			return err
 		}
 		reqMsg := &a1.PolicyRequestMessage{
@@ -200,7 +198,7 @@ func (a *a1pController) HandlePolicyCreate(ctx context.Context, policyID, policy
 		respCh := make(chan *stream.SBStreamMessage)
 
 		watcherID := uuid.New()
-		logA1P.Infof("New watcher %v added", watcherID)
+		log.Infof("New watcher %v added", watcherID)
 		outputCh := make(chan interface{}, 1)
 		//eCh := make(chan error, 1)
 
@@ -208,7 +206,7 @@ func (a *a1pController) HandlePolicyCreate(ctx context.Context, policyID, policy
 
 		err = a.streamBroker.Watch(nbID, respCh, watcherID)
 		if err != nil {
-			logA1P.Error(err)
+			log.Error(err)
 
 			a.streamBroker.DeleteWatcher(nbID, watcherID)
 			return err
@@ -216,7 +214,7 @@ func (a *a1pController) HandlePolicyCreate(ctx context.Context, policyID, policy
 
 		err = a.streamBroker.Send(sbID, sbMessage)
 		if err != nil {
-			logA1P.Error(err)
+			log.Error(err)
 
 			a.streamBroker.DeleteWatcher(nbID, watcherID)
 			return err
@@ -229,7 +227,7 @@ func (a *a1pController) HandlePolicyCreate(ctx context.Context, policyID, policy
 		close(outputCh)
 	}
 	if resErr != nil {
-		logA1P.Error(resErr)
+		log.Error(resErr)
 	}
 
 	return resErr
@@ -238,11 +236,11 @@ func (a *a1pController) HandlePolicyCreate(ctx context.Context, policyID, policy
 func (a *a1pController) HandlePolicyDelete(ctx context.Context, policyID, policyTypeID string) error {
 	targetXAppIDs, err := a.rnibClient.GetXAppIDsForPolicyTypeID(ctx, policyTypeID)
 	if err != nil {
-		logA1P.Error(err)
+		log.Error(err)
 		return err
 	}
 
-	logA1P.Infof("targetXAppIDs %v for policyTypeID %v", targetXAppIDs, policyTypeID)
+	log.Infof("targetXAppIDs %v for policyTypeID %v", targetXAppIDs, policyTypeID)
 
 	var resErr error = nil
 
@@ -267,14 +265,14 @@ func (a *a1pController) HandlePolicyDelete(ctx context.Context, policyID, policy
 		respCh := make(chan *stream.SBStreamMessage)
 
 		watcherID := uuid.New()
-		logA1P.Infof("New watcher %v added", watcherID)
+		log.Infof("New watcher %v added", watcherID)
 		outputCh := make(chan interface{}, 1)
 
 		go waitRespMsgWithTimer(nbID, watcherID, requestID, respCh, outputCh, TimeoutTimer, a.streamBroker)
 
 		err = a.streamBroker.Watch(nbID, respCh, watcherID)
 		if err != nil {
-			logA1P.Error(err)
+			log.Error(err)
 
 			a.streamBroker.DeleteWatcher(nbID, watcherID)
 			return err
@@ -282,7 +280,7 @@ func (a *a1pController) HandlePolicyDelete(ctx context.Context, policyID, policy
 
 		err = a.streamBroker.Send(sbID, sbMessage)
 		if err != nil {
-			logA1P.Error(err)
+			log.Error(err)
 
 			a.streamBroker.DeleteWatcher(nbID, watcherID)
 			return err
@@ -296,7 +294,7 @@ func (a *a1pController) HandlePolicyDelete(ctx context.Context, policyID, policy
 	}
 
 	if resErr != nil {
-		logA1P.Error(resErr)
+		log.Error(resErr)
 	}
 
 	return resErr
@@ -306,18 +304,18 @@ func (a *a1pController) HandlePolicyUpdate(ctx context.Context, policyID, policy
 	targetXAppIDs, err := a.rnibClient.GetXAppIDsForPolicyTypeID(ctx, policyTypeID)
 
 	if err != nil {
-		logA1P.Error(err)
+		log.Error(err)
 		return err
 	}
 
-	logA1P.Infof("targetXAppIDs %v for policyTypeID %v", targetXAppIDs, policyTypeID)
+	log.Infof("targetXAppIDs %v for policyTypeID %v", targetXAppIDs, policyTypeID)
 
 	var resErr error = nil
 	for _, targetXAppID := range targetXAppIDs {
 		requestID := uuid.New().String()
 		obj, err := json.Marshal(policyObject)
 		if err != nil {
-			logA1P.Error(err)
+			log.Error(err)
 			return err
 		}
 		reqMsg := &a1.PolicyRequestMessage{
@@ -343,21 +341,21 @@ func (a *a1pController) HandlePolicyUpdate(ctx context.Context, policyID, policy
 		respCh := make(chan *stream.SBStreamMessage)
 
 		watcherID := uuid.New()
-		logA1P.Infof("New watcher %v added", watcherID)
+		log.Infof("New watcher %v added", watcherID)
 		outputCh := make(chan interface{}, 1)
 
 		go waitRespMsgWithTimer(nbID, watcherID, requestID, respCh, outputCh, TimeoutTimer, a.streamBroker)
 
 		err = a.streamBroker.Watch(nbID, respCh, watcherID)
 		if err != nil {
-			logA1P.Error(err)
+			log.Error(err)
 			a.streamBroker.DeleteWatcher(nbID, watcherID)
 			return err
 		}
 
 		err = a.streamBroker.Send(sbID, sbMessage)
 		if err != nil {
-			logA1P.Error(err)
+			log.Error(err)
 			a.streamBroker.DeleteWatcher(nbID, watcherID)
 			return err
 		}
@@ -370,7 +368,7 @@ func (a *a1pController) HandlePolicyUpdate(ctx context.Context, policyID, policy
 	}
 
 	if resErr != nil {
-		logA1P.Error(resErr)
+		log.Error(resErr)
 	}
 
 	return resErr
@@ -380,7 +378,7 @@ func (a *a1pController) HandleGetPolicyTypes(ctx context.Context) []string {
 	results := make([]string, 0)
 	policyTypes, err := a.rnibClient.GetPolicyTypes(ctx)
 	if err != nil {
-		logA1P.Error(err)
+		log.Error(err)
 		return nil
 	}
 
@@ -398,7 +396,7 @@ func (a *a1pController) HandleGetPolicytypesPolicyTypeId(ctx context.Context, po
 
 	policyTypes, err := a.rnibClient.GetPolicyTypes(ctx)
 	if err != nil {
-		logA1P.Error(err)
+		log.Error(err)
 	}
 	for k := range policyTypes {
 		if string(k) == policyTypeID {
@@ -413,11 +411,11 @@ func (a *a1pController) HandleGetPolicytypesPolicyTypeId(ctx context.Context, po
 func (a *a1pController) HandleGetPolicytypesPolicyTypeIdPolicies(ctx context.Context, policyTypeID string) ([]string, error) {
 	targetXAppIDs, err := a.rnibClient.GetXAppIDsForPolicyTypeID(ctx, policyTypeID)
 	if err != nil {
-		logA1P.Error(err)
+		log.Error(err)
 		return nil, err
 	}
 
-	logA1P.Infof("targetXAppIDs %v for policyTypeID %v", targetXAppIDs, policyTypeID)
+	log.Infof("targetXAppIDs %v for policyTypeID %v", targetXAppIDs, policyTypeID)
 
 	objs := make([][]string, 0)
 
@@ -443,21 +441,21 @@ func (a *a1pController) HandleGetPolicytypesPolicyTypeIdPolicies(ctx context.Con
 		respCh := make(chan *stream.SBStreamMessage)
 
 		watcherID := uuid.New()
-		logA1P.Infof("New watcher %v added", watcherID)
+		log.Infof("New watcher %v added", watcherID)
 		outputCh := make(chan interface{}, 1)
 
 		go waitRespMsgWithTimer(nbID, watcherID, requestID, respCh, outputCh, TimeoutTimer, a.streamBroker)
 
 		err = a.streamBroker.Watch(nbID, respCh, watcherID)
 		if err != nil {
-			logA1P.Error(err)
+			log.Error(err)
 			a.streamBroker.DeleteWatcher(nbID, watcherID)
 			return nil, err
 		}
 
 		err = a.streamBroker.Send(sbID, sbMessage)
 		if err != nil {
-			logA1P.Error(err)
+			log.Error(err)
 			a.streamBroker.DeleteWatcher(nbID, watcherID)
 			return nil, err
 		}
@@ -480,12 +478,12 @@ func (a *a1pController) HandleGetPolicytypesPolicyTypeIdPolicies(ctx context.Con
 	}
 
 	if resErr != nil {
-		logA1P.Error(resErr)
+		log.Error(resErr)
 		return nil, resErr
 	}
 
 	if ok, err := utils.PolicyObjListValidate(objs); !ok {
-		logA1P.Error(err)
+		log.Error(err)
 		return nil, err
 	}
 
@@ -495,11 +493,11 @@ func (a *a1pController) HandleGetPolicytypesPolicyTypeIdPolicies(ctx context.Con
 func (a *a1pController) HandleGetPolicy(ctx context.Context, policyID, policyTypeID string) (map[string]interface{}, error) {
 	targetXAppIDs, err := a.rnibClient.GetXAppIDsForPolicyTypeID(ctx, policyTypeID)
 	if err != nil {
-		logA1P.Error(err)
+		log.Error(err)
 		return nil, err
 	}
 
-	logA1P.Infof("targetXAppIDs %v for policyTypeID %v", targetXAppIDs, policyTypeID)
+	log.Infof("targetXAppIDs %v for policyTypeID %v", targetXAppIDs, policyTypeID)
 
 	objs := make([]map[string]interface{}, 0)
 
@@ -526,14 +524,14 @@ func (a *a1pController) HandleGetPolicy(ctx context.Context, policyID, policyTyp
 		respCh := make(chan *stream.SBStreamMessage)
 
 		watcherID := uuid.New()
-		logA1P.Infof("New watcher %v added", watcherID)
+		log.Infof("New watcher %v added", watcherID)
 		outputCh := make(chan interface{}, 1)
 
 		go waitRespMsgWithTimer(nbID, watcherID, requestID, respCh, outputCh, TimeoutTimer, a.streamBroker)
 
 		err = a.streamBroker.Watch(nbID, respCh, watcherID)
 		if err != nil {
-			logA1P.Error(err)
+			log.Error(err)
 
 			a.streamBroker.DeleteWatcher(nbID, watcherID)
 			return nil, err
@@ -541,7 +539,7 @@ func (a *a1pController) HandleGetPolicy(ctx context.Context, policyID, policyTyp
 
 		err = a.streamBroker.Send(sbID, sbMessage)
 		if err != nil {
-			logA1P.Error(err)
+			log.Error(err)
 
 			a.streamBroker.DeleteWatcher(nbID, watcherID)
 			return nil, err
@@ -565,12 +563,12 @@ func (a *a1pController) HandleGetPolicy(ctx context.Context, policyID, policyTyp
 	}
 
 	if resErr != nil {
-		logA1P.Error(resErr)
+		log.Error(resErr)
 		return nil, resErr
 	}
 
 	if ok, err := utils.PolicyObjListValidate(objs); !ok {
-		logA1P.Error(err)
+		log.Error(err)
 		return nil, err
 	}
 
@@ -580,11 +578,11 @@ func (a *a1pController) HandleGetPolicy(ctx context.Context, policyID, policyTyp
 func (a *a1pController) HandleGetPolicyStatus(ctx context.Context, policyID, policyTypeID string) (map[string]interface{}, error) {
 	targetXAppIDs, err := a.rnibClient.GetXAppIDsForPolicyTypeID(ctx, policyTypeID)
 	if err != nil {
-		logA1P.Error(err)
+		log.Error(err)
 		return nil, err
 	}
 
-	logA1P.Infof("targetXAppIDs %v for policyTypeID %v", targetXAppIDs, policyTypeID)
+	log.Infof("targetXAppIDs %v for policyTypeID %v", targetXAppIDs, policyTypeID)
 
 	objs := make([]map[string]interface{}, 0)
 
@@ -611,14 +609,14 @@ func (a *a1pController) HandleGetPolicyStatus(ctx context.Context, policyID, pol
 		respCh := make(chan *stream.SBStreamMessage)
 
 		watcherID := uuid.New()
-		logA1P.Infof("New watcher %v added", watcherID)
+		log.Infof("New watcher %v added", watcherID)
 		outputCh := make(chan interface{}, 1)
 
 		go waitRespMsgWithTimer(nbID, watcherID, requestID, respCh, outputCh, TimeoutTimer, a.streamBroker)
 
 		err = a.streamBroker.Watch(nbID, respCh, watcherID)
 		if err != nil {
-			logA1P.Error(err)
+			log.Error(err)
 
 			a.streamBroker.DeleteWatcher(nbID, watcherID)
 			return nil, err
@@ -626,7 +624,7 @@ func (a *a1pController) HandleGetPolicyStatus(ctx context.Context, policyID, pol
 
 		err = a.streamBroker.Send(sbID, sbMessage)
 		if err != nil {
-			logA1P.Error(err)
+			log.Error(err)
 
 			a.streamBroker.DeleteWatcher(nbID, watcherID)
 			return nil, err
@@ -650,12 +648,12 @@ func (a *a1pController) HandleGetPolicyStatus(ctx context.Context, policyID, pol
 	}
 
 	if resErr != nil {
-		logA1P.Error(resErr)
+		log.Error(resErr)
 		return nil, resErr
 	}
 
 	if ok, err := utils.PolicyObjListValidate(objs); !ok {
-		logA1P.Error(err)
+		log.Error(err)
 		return nil, err
 	}
 
