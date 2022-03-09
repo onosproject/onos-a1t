@@ -6,13 +6,14 @@ package stream
 
 import (
 	"context"
+	"sync"
+
 	"github.com/google/uuid"
 	"github.com/onosproject/onos-lib-go/pkg/errors"
 	"github.com/onosproject/onos-lib-go/pkg/logging"
-	"sync"
 )
 
-var logBroker = logging.GetLogger("stream", "broker")
+var logBroker = logging.GetLogger()
 
 type Broker interface {
 	Close(id ID)

@@ -6,13 +6,14 @@ package store
 
 import (
 	"context"
+	"sync"
+
 	"github.com/google/uuid"
 	"github.com/onosproject/onos-lib-go/pkg/errors"
 	"github.com/onosproject/onos-lib-go/pkg/logging"
-	"sync"
 )
 
-var log = logging.GetLogger("store")
+var log = logging.GetLogger()
 
 type Store interface {
 	// Put puts the entry to the local store

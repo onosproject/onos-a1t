@@ -8,13 +8,14 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"time"
+
 	"github.com/onosproject/onos-a1t/pkg/controller"
 	a1p "github.com/onosproject/onos-a1t/pkg/northbound/a1ap/policy_management"
 	"github.com/onosproject/onos-a1t/pkg/rnib"
 	"github.com/onosproject/onos-a1t/pkg/store"
 	"github.com/onosproject/onos-lib-go/pkg/logging"
 	"google.golang.org/grpc"
-	"time"
 
 	a1tadminapi "github.com/onosproject/onos-api/go/onos/a1t/admin"
 	"github.com/onosproject/onos-lib-go/pkg/logging/service"
@@ -22,7 +23,7 @@ import (
 
 const TimeoutTimer = time.Second * 5
 
-var cliLog = logging.GetLogger("northbound", "cli")
+var cliLog = logging.GetLogger()
 
 // NewService returns a new A1T interface service.
 func NewService(subscriptionStore store.Store, policiesStore store.Store, eijobsStore store.Store, controllerBroker controller.Broker, rnibClient rnib.TopoClient) service.Service {

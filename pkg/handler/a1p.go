@@ -23,7 +23,7 @@ type a1pWraper struct {
 	a1pController controller.A1PController
 }
 
-var a1pLog = logging.GetLogger("handler", "a1p")
+var a1pLog = logging.GetLogger()
 
 func SetRESTA1PWraper(e *echo.Echo, version string, a1pController controller.A1PController) {
 	wraper := &a1pWraper{

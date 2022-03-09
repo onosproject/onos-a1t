@@ -7,13 +7,14 @@ package utils
 import (
 	"encoding/json"
 	"fmt"
+
 	policyschemas "github.com/onosproject/onos-a1-dm/go/policy_schemas"
 	"github.com/onosproject/onos-lib-go/pkg/errors"
 	"github.com/onosproject/onos-lib-go/pkg/logging"
 	"github.com/xeipuuv/gojsonschema"
 )
 
-var jsonValLog = logging.GetLogger("utils", "json-validator")
+var jsonValLog = logging.GetLogger()
 
 const NotificationDestination = "notificationDestination"
 

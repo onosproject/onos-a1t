@@ -6,15 +6,16 @@ package sbclient
 
 import (
 	"context"
+	"io"
+
 	"github.com/google/uuid"
 	"github.com/onosproject/onos-a1t/pkg/stream"
 	"github.com/onosproject/onos-api/go/onos/a1t/a1"
 	"github.com/onosproject/onos-lib-go/pkg/errors"
 	"github.com/onosproject/onos-lib-go/pkg/logging"
-	"io"
 )
 
-var a1eiLog = logging.GetLogger("southbound", "a1ei-client")
+var a1eiLog = logging.GetLogger()
 
 func NewA1EIClient(ctx context.Context, targetXAppID string, ipAddress string, port uint32, streamBroker stream.Broker) (Client, error) {
 	// create gRPC client

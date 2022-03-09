@@ -6,12 +6,13 @@ package manager
 
 import (
 	"context"
+	"strconv"
+	"strings"
+
 	"github.com/onosproject/onos-a1t/pkg/northbound/cli"
 	"github.com/onosproject/onos-a1t/pkg/southbound"
 	"github.com/onosproject/onos-a1t/pkg/store"
 	"github.com/onosproject/onos-a1t/pkg/stream"
-	"strconv"
-	"strings"
 
 	"github.com/onosproject/onos-a1t/pkg/controller"
 	nbirest "github.com/onosproject/onos-a1t/pkg/northbound/rest"
@@ -22,7 +23,7 @@ import (
 	"github.com/onosproject/onos-lib-go/pkg/northbound"
 )
 
-var log = logging.GetLogger("manager")
+var log = logging.GetLogger()
 
 type Config struct {
 	CAPath      string
