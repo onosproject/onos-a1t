@@ -18,12 +18,6 @@ make kind
 cd - 
 ```
 
-## Local Helm Repos
-```bash
-cd onos-helm-charts && make deps 
-cd sdran-helm-charts && make deps
-```
-
 ## Public Helm Repos
 ```bash
 helm repo add atomix https://charts.atomix.io
@@ -48,7 +42,7 @@ kubectl create namespace test
 
 ```bash
 cd onos-a1t
-helmit -n test test ./cmd/onos-a1t-test  --secret "sd-ran-username=******" --secret "sd-ran-password=******" --suite a1pm --context ./test/utils/charts/
+helmit -n test test ./cmd/onos-a1t-test --suite a1pm --context ./test/utils/charts/
 ```
 
 ## Check a1t logs

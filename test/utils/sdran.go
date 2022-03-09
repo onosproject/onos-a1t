@@ -54,13 +54,14 @@ func CreateSdranRelease(c *input.Context) (*helm.HelmRelease, error) {
 }
 
 // CreateRanSimulatorWithName creates a ran simulator
-func CreateA1TXapp(t *testing.T, name string) *helm.HelmRelease {
+func CreateA1TXapp(t *testing.T, name string, policyTypeIDs string) *helm.HelmRelease {
 
 	a1txapp := helm.
 		Chart("./a1txapp").
 		Release(name).
 		Set("image.tag", "latest").
-		Set("fullnameOverride", "")
+		Set("fullnameOverride", "").
+		Set("config.policyTypeIDs", policyTypeIDs)
 	err := a1txapp.Install(true)
 	assert.NoError(t, err, "could not install a1txapp %v", err)
 

@@ -42,6 +42,7 @@ spec:
             - "-caPath=/etc/onos/certs/tls.cacrt"
             - "-keyPath=/etc/onos/certs/tls.key"
             - "-certPath=/etc/onos/certs/tls.crt"
+            - "-policyTypeIDs={{ .Values.config.policyTypeIDs }}"
           ports:
             - name: grpc
               containerPort: {{ .Values.service.grpc.port }}

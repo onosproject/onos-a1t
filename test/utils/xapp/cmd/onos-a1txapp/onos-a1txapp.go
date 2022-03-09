@@ -20,6 +20,7 @@ func main() {
 	certPath := flag.String("certPath", "", "path to client certificate")
 	configPath := flag.String("configPath", "/etc/onos/config/config.json", "path to config.json file")
 	grpcPort := flag.Int("grpcPort", 5150, "grpc Port number")
+	policyTypeIDs := flag.String("policyTypeIDs", "", "List of supported policyTypeIDs")
 
 	ready := make(chan bool)
 
@@ -31,11 +32,12 @@ func main() {
 	}
 
 	cfg := manager.Config{
-		CAPath:     *caPath,
-		KeyPath:    *keyPath,
-		CertPath:   *certPath,
-		GRPCPort:   *grpcPort,
-		ConfigPath: *configPath,
+		CAPath:        *caPath,
+		KeyPath:       *keyPath,
+		CertPath:      *certPath,
+		GRPCPort:      *grpcPort,
+		ConfigPath:    *configPath,
+		PolicyTypeIDs: *policyTypeIDs,
 	}
 
 	log.Info("Starting onos-a1txapp")
