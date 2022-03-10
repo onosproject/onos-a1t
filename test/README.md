@@ -1,5 +1,8 @@
 # How to run the integration tests
 
+## Requirements
+Install: make, helm, kubectl, kind `https://kind.sigs.k8s.io/` and helmit `https://github.com/onosproject/helmit`.
+
 ## Create Kind Cluster
 ```bash
 kind create cluster
