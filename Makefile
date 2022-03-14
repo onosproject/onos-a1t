@@ -31,21 +31,18 @@ oapi-codegen:
 openapi-spec-validator:
 	openapi-spec-validator || ( cd .. && pip3 install openapi-spec-validator==${OAPI_SPEC_VALIDATOR_VERSION})
 
-license_check_a1t:  # @HELP examine and ensure license headers exist
-	./build/build-tools/licensing/boilerplate.py -v --rootdir=${CURDIR} --skipped-dir pkg/northbound/a1ap --skipped-dir api --skipped-dir build --boilerplate SPDX-Apache-2.0
-
 buflint: #@HELP run the "buf check lint" command on the proto files in 'api'
 	docker run -it -v `pwd`:/go/src/github.com/onosproject/onos-a1t \
 		-w /go/src/github.com/onosproject/onos-a1t/api \
 		bufbuild/buf:${BUF_VERSION} check lint
 
 test: # @HELP run the unit tests and source code validation producing a golang style report
-test: build deps linters license_check_a1t
+test: build deps linters license
 	go test -race github.com/onosproject/onos-a1t/pkg/...
 	go test -race github.com/onosproject/onos-a1t/cmd/...
 
 jenkins-test: # @HELP run the unit tests and source code validation producing a junit style report for Jenkins
-jenkins-test: build deps license_check_a1t linters
+jenkins-test: build deps license linters
 	TEST_PACKAGES=github.com/onosproject/onos-a1t/... ./build/build-tools/build/jenkins/make-unit
 
 onos-a1t-docker: # @HELP build onos-a1t Docker image
