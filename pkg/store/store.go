@@ -133,7 +133,7 @@ func (s *store) Entries(ctx context.Context, ch chan<- *Entry) {
 
 	if len(s.localStore) == 0 {
 		close(ch)
-		log.Error(errors.NewNotFound("There is no entry in the local store"))
+		log.Info("There is no entry in the local store")
 		return
 	}
 
