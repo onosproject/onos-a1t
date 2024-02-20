@@ -14,7 +14,17 @@ updates:
     schedule:
       interval: "weekly"
 
+  - package-ecosystem: "docker"
+    directory: "test/utils/xapp/build/onos-a1txapp"
+    schedule:
+      interval: "weekly"
+
   - package-ecosystem: "gomod"
     directory: "/"
+    schedule:
+      interval: "weekly"
+
+  - package-ecosystem: "gomod"
+    directory: "test/utils/xapp"
     schedule:
       interval: "weekly"
