@@ -17,7 +17,7 @@ COPY build/ /go/src/github.com/onosproject/onos-a1txapp/build
 
 RUN cd /go/src/github.com/onosproject/onos-a1txapp && GOFLAGS=-mod=vendor make ${ONOS_MAKE_TARGET}
 
-FROM alpine:3.11
+FROM alpine:3.19
 RUN apk add libc6-compat
 
 USER nobody
