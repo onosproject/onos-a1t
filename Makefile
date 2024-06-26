@@ -2,6 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
+
 .PHONY: build
 
 OAPI_CODEGEN_VERSION := v1.9.0
