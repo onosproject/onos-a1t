@@ -20,6 +20,8 @@ ONOS_BUILD_VERSION := v0.6.6
 ONOS_PROTOC_VERSION := v0.6.6
 BUF_VERSION := 0.27.1
 
+GOLANG_CI_VERSION := v1.52.2
+
 all: build docker-build
 
 build: # @HELP build the Go binaries and run all validations (default)
