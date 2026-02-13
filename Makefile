@@ -10,7 +10,12 @@ export GO111MODULE=on
 OAPI_CODEGEN_VERSION := v1.9.0
 OAPI_SPEC_VALIDATOR_VERSION := 0.3.1
 
-ONOS_A1T_VERSION ?= latest
+ONOS_A1T_VERSION  ?= latest
+DOCKER_TAG        ?= ${ONOS_A1T_VERSION}
+DOCKER_REPOSITORY ?= onosproject/
+DOCKER_REGISTRY   ?= ""
+DOCKER_IMAGENAME  := ${DOCKER_REGISTRY}${DOCKER_REPOSITORY}onos-a1t:${DOCKER_TAG}
+
 ONOS_BUILD_VERSION := v0.6.6
 ONOS_PROTOC_VERSION := v0.6.6
 BUF_VERSION := 0.27.1
@@ -28,14 +33,14 @@ test: build lint license
 docker-build-onos-a1t: # @HELP build onos-a1t Docker image
 	@go mod vendor
 	docker build . -f build/onos-a1t/Dockerfile \
-		-t onosproject/onos-a1t:${ONOS_A1T_VERSION}
+		-t ${DOCKER_IMAGENAME}
 	@rm -rf vendor
 
 docker-build: # @HELP build all Docker images
 docker-build: build docker-build-onos-a1t
 
 docker-push-onos-a1t: # @HELP push onos-a1t Docker image
-	docker push onosproject/onos-a1t:${ONOS_A1T_VERSION}
+	docker push ${DOCKER_IMAGENAME}
 
 docker-push: # @HELP push docker images
 docker-push: docker-push-onos-a1t
