@@ -15,7 +15,7 @@ require (
 	github.com/onosproject/onos-ric-sdk-go v0.8.12
 	github.com/onosproject/onos-test v0.6.5
 	github.com/santhosh-tekuri/jsonschema/v5 v5.0.0
-	github.com/stretchr/testify v1.8.2
+	github.com/stretchr/testify v1.9.0
 	github.com/xeipuuv/gojsonschema v1.2.0
 	google.golang.org/grpc v1.54.0
 )
